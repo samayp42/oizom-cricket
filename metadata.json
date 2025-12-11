@@ -1,0 +1,5 @@
+{
+  "name": "Oizom Championship League",
+  "description": "A high-performance cricket tournament dashboard and scoring app featuring NRR calculation, live scoring with undo capability, and automated knockout progression.",
+  "requestFramePermissions": []
+}
