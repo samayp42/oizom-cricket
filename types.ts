@@ -2,6 +2,8 @@ export interface Player {
   id: string;
   name: string;
   teamId: string;
+  role?: 'captain' | 'vice-captain' | 'player';
+  gender?: 'M' | 'F';
   stats: {
     runs: number;
     balls: number;
@@ -81,7 +83,7 @@ export interface InningsState {
   // New Features
   isFreeHit: boolean;
   currentPartnership: Partnership;
-  fow: FOW[]; 
+  fow: FOW[];
 }
 
 export type MatchStatus = 'scheduled' | 'toss' | 'live' | 'innings_break' | 'completed';

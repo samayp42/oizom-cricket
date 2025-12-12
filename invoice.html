@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Invoice - Aarenza Die Cast</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Arimo:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Arimo', Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.3;
+            color: #000;
+            background: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .invoice-container {
+            background: #fff;
+            width: 210mm;
+            /* A4 width */
+            min-height: 297mm;
+            /* A4 height */
+            margin: 0 auto;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        td,
+        th {
+            border: 1px solid #000;
+            padding: 3px 5px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-bold {
+            font-weight: 700;
+        }
+
+        .vertical-bottom {
+            vertical-align: bottom;
+        }
+
+        /* Header Specifics */
+        .header-title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 14px;
+            border: none;
+            padding-bottom: 5px;
+        }
+
+        .company-name {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        /* Items Table Specifics */
+        .items-table {
+            flex-grow: 1;
+            /* Allows table to take available space */
+        }
+
+        .items-table th {
+            font-weight: normal;
+            text-align: center;
+            font-size: 10px;
+            border-bottom: 1px solid #000;
+        }
+
+        .items-table td {
+            padding: 4px 5px;
+        }
+
+        /* This style removes top/bottom borders for item rows to create the 
+           continuous vertical column effect without horizontal lines between items.
+           The side borders (left/right) remain to form the vertical lines.
+        */
+        .item-row td {
+            border-top: none;
+            border-bottom: none;
+        }
+
+        /* The spacer row keeps the vertical lines going down */
+        .spacer-row td {
+            border-top: none;
+            border-bottom: 1px solid #000;
+            /* Closes the table at the bottom of the list */
+            height: 350px;
+            /* Adjust this to fill the page vertically */
+        }
+
+        /* Totals Section */
+        .totals-row td {
+            border-top: none;
+            /* Connects smoothly to the spacer */
+            border-bottom: none;
+        }
+
+        .totals-row:last-child td {
+            border-bottom: 1px solid #000;
+        }
+
+        /* Print Settings */
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+
+            .invoice-container {
+                width: 100%;
+                border: none;
+                margin: 0;
+                padding: 0;
+                min-height: 295mm;
+            }
+
+            @page {
+                margin: 0.5cm;
+                size: A4;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="invoice-container">
+        <!-- Title -->
+        <div class="header-title">Tax Invoice</div>
+
+        <!-- Header Structure -->
+        <table>
+            <!-- Seller & Invoice Details Row -->
+            <tr>
+                <td width="60%" style="border-bottom: none;">
+                    <div class="company-name">AARENZA DIE CAST PRIVATE LIMITED</div>
+                    <div>Survey No.1451, Smith Farm, Indore Highway,</div>
+                    <div>Bhavda Gam Road,</div>
+                    <div>At. Bhavda, Tal.-Daskroi, Ahmadabad,</div>
+                    <div>Gujarat - 382433</div>
+                    <div>GSTIN/UIN: 24AAPCA4622G1ZT</div>
+                    <div>State Name : Gujarat, Goetm</div>
+                    <div>Contact : 9978536880</div>
+                </td>
+                <td width="40%" style="padding: 0; border: none;">
+                    <table style="height: 100%;">
+                        <tr>
+                            <td width="50%">
+                                Invoice No.<br>
+                                <span class="text-bold">GST/25-26/569</span>
+                            </td>
+                            <td width="50%">
+                                Dated<br>
+                                <span class="text-bold">30/06/2025</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Delivery Note
+                            </td>
+                            <td>
+                                Mode/Terms of Payment
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Reference No. & Date.
+                            </td>
+                            <td>
+                                Other References
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Buyer's Order No.
+                            </td>
+                            <td>
+                                Dated
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Dispatch Doc No.
+                            </td>
+                            <td>
+                                Delivery Note Date
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Dispatched through
+                            </td>
+                            <td>
+                                Destination
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Vessel/Flight No.
+                            </td>
+                            <td>
+                                Place of receipt by shipper:
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                City/Port of Loading
+                            </td>
+                            <td>
+                                City/Port of Discharge
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <!-- Buyer & Consignee Row -->
+            <tr>
+                <td style="border-top: none; padding-top: 5px;">
+                    <div>Consignee (Ship to)</div>
+                    <div class="text-bold">OIZOM INSTRUMENTS PRIVATE LIMITED</div>
+                    <div>2, GARDEN VIEW CORPORATE HOUSE,</div>
+                    <div>OPP BODAKDEV AUDA GARDEN,</div>
+                    <div>Bodakdev, Ahmedabad, Ahmedabad, Gujarat, 380054</div>
+                    <div>GSTIN/UIN &nbsp;&nbsp;: 24AACCO2230R1ZD</div>
+                    <div>State Name &nbsp;: Gujarat, Code : 24</div>
+                </td>
+                <td rowspan="2" style="border-left: 1px solid #000; border-top: 1px solid #000; vertical-align: top;">
+                    Terms of Delivery
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div>Buyer (Bill to)</div>
+                    <div class="text-bold">OIZOM INSTRUMENTS PRIVATE LIMITED</div>
+                    <div>2, GARDEN VIEW CORPORATE HOUSE,</div>
+                    <div>OPP BODAKDEV AUDA GARDEN,</div>
+                    <div>Bodakdev, Ahmedabad, Ahmedabad, Gujarat, 380054</div>
+                    <div>GSTIN/UIN &nbsp;&nbsp;: 24AACCO2230R1ZD</div>
+                    <div>State Name &nbsp;: Gujarat, Code : 24</div>
+                    <div>Place of Supply: Gujarat</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Items Table -->
+        <table class="items-table" style="margin-top: -1px;">
+            <colgroup>
+                <col style="width: 5%;"> <!-- Sl No -->
+                <col style="width: 43%;"> <!-- Description -->
+                <col style="width: 12%;"> <!-- HSN -->
+                <col style="width: 10%;"> <!-- Qty -->
+                <col style="width: 10%;"> <!-- Rate -->
+                <col style="width: 6%;"> <!-- Per -->
+                <col style="width: 4%;"> <!-- Disc -->
+                <col style="width: 15%;"> <!-- Amount -->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Sl<br>No.</th>
+                    <th>Description of Goods</th>
+                    <th>HSN/SAC</th>
+                    <th>Quantity</th>
+                    <th>Rate</th>
+                    <th>per</th>
+                    <th>Disc. %</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Item 1 -->
+                <tr class="item-row">
+                    <td>1</td>
+                    <td><span class="text-bold">CASTING BIG ENCLOSURE BODY WITHOUT MACHINING</span></td>
+                    <td>84804900</td>
+                    <td class="text-right text-bold">19.00</td>
+                    <td class="text-right">787.40</td>
+                    <td>NOS</td>
+                    <td></td>
+                    <td class="text-right text-bold">14,960.60</td>
+                </tr>
+                <!-- Item 2 -->
+                <tr class="item-row">
+                    <td>2</td>
+                    <td><span class="text-bold">CASTING BIG ENCLOSURE PLAIN COVER BODY WITHOUT MACHINING</span></td>
+                    <td>84804900</td>
+                    <td class="text-right text-bold">15.00</td>
+                    <td class="text-right">374.81</td>
+                    <td>NOS</td>
+                    <td></td>
+                    <td class="text-right text-bold">5,622.15</td>
+                </tr>
+                <!-- Item 3 -->
+                <tr class="item-row">
+                    <td>3</td>
+                    <td><span class="text-bold">CASTING BIG ENCLOSURE HOLE COVER BODY WITHOUT MACHINING</span></td>
+                    <td>84804900</td>
+                    <td class="text-right text-bold">3.00</td>
+                    <td class="text-right">350.51</td>
+                    <td>NOS</td>
+                    <td></td>
+                    <td class="text-right text-bold">1,051.53</td>
+                </tr>
+                <!-- Item 4 -->
+                <tr class="item-row">
+                    <td>4</td>
+                    <td><span class="text-bold">CASTING SMALL ENCLOSURE BODY WITH MACHINING</span></td>
+                    <td>84804900</td>
+                    <td class="text-right text-bold">10.00</td>
+                    <td class="text-right">639.38</td>
+                    <td>NOS</td>
+                    <td></td>
+                    <td class="text-right text-bold">6,393.80</td>
+                </tr>
+                <!-- Item 5 -->
+                <tr class="item-row">
+                    <td>5</td>
+                    <td><span class="text-bold">CASTING BIG ENCLOSURE WITH MACHINING</span></td>
+                    <td>84804900</td>
+                    <td class="text-right text-bold">10.00</td>
+                    <td class="text-right">290.11</td>
+                    <td>NOS</td>
+                    <td></td>
+                    <td class="text-right text-bold">2,901.10</td>
+                </tr>
+
+                <!-- Spacer Row: This creates the vertical lines filling the page -->
+                <tr class="spacer-row">
+                    <td></td> <!-- Sl -->
+                    <td></td> <!-- Desc -->
+                    <td></td> <!-- HSN -->
+                    <td></td> <!-- Qty -->
+                    <td></td> <!-- Rate -->
+                    <td></td> <!-- Per -->
+                    <td></td> <!-- Disc -->
+                    <td></td> <!-- Amount -->
+                </tr>
+
+                <!-- Totals -->
+                <!-- We use empty cells for cols 1-5 to preserve vertical lines on the left -->
+                <tr class="totals-row">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td colspan="2" class="text-right text-bold">Sub Total</td>
+                    <td class="text-right text-bold">30,929.18</td>
+                </tr>
+                <tr class="totals-row">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td colspan="2" class="text-right text-bold">CGST (9%)</td>
+                    <td class="text-right text-bold">2,783.63</td>
+                </tr>
+                <tr class="totals-row">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td colspan="2" class="text-right text-bold">SGST (9%)</td>
+                    <td class="text-right text-bold">2,783.63</td>
+                </tr>
+                <tr class="totals-row">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td colspan="2" class="text-right text-bold">Adjustment</td>
+                    <td class="text-right text-bold">(-) 0.44</td>
+                </tr>
+                <tr style="border-top: 1px solid #000;">
+                    <td style="border-right: none;"></td>
+                    <td colspan="4" class="text-right" style="border-left: none; border-right: none;">Total</td>
+                    <td colspan="2" class="text-right text-bold"
+                        style="border-left: none; border-right: 1px solid #000;">2.00 NOS</td>
+                    <td class="text-right text-bold" style="font-size: 13px;">₹36,496.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Amount Words -->
+        <table style="margin-top: -1px;">
+            <tr>
+                <td style="border-bottom: 1px solid #000;">
+                    Amount Chargeable (in words)<br>
+                    <span class="text-bold">INR Thirty-Six Thousand Four Hundred Ninety-Six Only</span>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Tax Table -->
+        <table style="margin-top: -1px;">
+            <colgroup>
+                <col style="width: 30%;">
+                <col style="width: 14%;">
+                <col style="width: 7%;">
+                <col style="width: 14%;">
+                <col style="width: 7%;">
+                <col style="width: 14%;">
+                <col style="width: 14%;">
+            </colgroup>
+            <tr class="text-center" style="font-size: 10px;">
+                <td rowspan="2" class="vertical-bottom">HSN/SAC</td>
+                <td rowspan="2" class="vertical-bottom">Taxable<br>Value</td>
+                <td colspan="2">CGST</td>
+                <td colspan="2">SGST/UTGST</td>
+                <td rowspan="2" class="vertical-bottom">Total<br>Tax Amount</td>
+            </tr>
+            <tr class="text-center" style="font-size: 10px;">
+                <td>Rate</td>
+                <td>Amount</td>
+                <td>Rate</td>
+                <td>Amount</td>
+            </tr>
+            <tr>
+                <td>84804900</td>
+                <td class="text-right text-bold">30,929.18</td>
+                <td class="text-right">9%</td>
+                <td class="text-right text-bold">2,783.63</td>
+                <td class="text-right">9%</td>
+                <td class="text-right text-bold">2,783.63</td>
+                <td class="text-right text-bold">5,567.26</td>
+            </tr>
+            <tr>
+                <td class="text-right text-bold">Total</td>
+                <td class="text-right text-bold">30,929.18</td>
+                <td></td>
+                <td class="text-right text-bold">2,783.63</td>
+                <td></td>
+                <td class="text-right text-bold">2,783.63</td>
+                <td class="text-right text-bold">5,567.26</td>
+            </tr>
+        </table>
+
+        <!-- Tax Words & Footer -->
+        <table style="margin-top: -1px;">
+            <tr>
+                <td width="55%" style="border-right: none;">
+                    Tax Amount (in words) : <span class="text-bold">INR Five Thousand Five Hundred Sixty-Seven and
+                        Twenty-Six Paise Only</span>
+
+                    <div style="margin-top: 20px;">
+                        <div style="text-decoration: underline;">Declaration</div>
+                        <div>We declare that this invoice shows the actual price of the goods described and that all
+                            particulars are true and correct.</div>
+                    </div>
+                </td>
+                <td width="45%" style="border-left: 1px solid #000;">
+                    <div style="margin-bottom: 5px;">Company's Bank Details</div>
+                    <table style="border: none;">
+                        <tr>
+                            <td style="border: none; padding: 0;">Bank Name</td>
+                            <td style="border: none; padding: 0;">: <span class="text-bold">HDFC BANK A/C 0660</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 0;">A/c No.</td>
+                            <td style="border: none; padding: 0;">: <span class="text-bold">50200059020660</span></td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 0;">Branch & IFS Code</td>
+                            <td style="border: none; padding: 0;">: <span class="text-bold">ODHAV & HDFC0002461</span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div style="margin-top: 30px; text-align: right; padding-right: 10px;">
+                        for <span class="text-bold">AARENZA TOOL ROOM</span>
+                    </div>
+
+                    <div style="margin-top: 40px; text-align: right; padding-right: 10px;">
+                        Authorised Signatory
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div style="text-align: center; font-size: 10px; margin-top: 5px;">
+            This is a Computer Generated Invoice
+        </div>
+
+    </div>
+
+</body>
+
+</html>

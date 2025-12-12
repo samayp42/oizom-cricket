@@ -1,20 +1,46 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Oizom Champions League (OCL)
 
-# Run and deploy your AI Studio app
+Premium cricket scoreboard manager and tournament organizer.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1I2ilBqRu1mbVPfiGnbF8VT_2lb77MGlz
+- **Live Scoring**: Real-time ball-by-ball scoring interface
+- **Tournament Management**: Teams, groups, and match scheduling
+- **Premium UI/UX**: Glassmorphism design, animations, and dark mode
+- **Analytics**: Match statistics, partnerships, and player performance
+- **Supabase Integration**: (Optional) Cloud database for real-time sync across devices
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Getting Started
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+
+2. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Open [http://localhost:3000](http://localhost:3000)
+
+## Deployment
+
+This app is optimized for Vercel deployment.
+
+```bash
+npm run build
+vercel --prod
+```
+
+## Data Persistence
+
+By default, data is saved to **LocalStorage**. To enable cloud sync with Supabase:
+
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Run the SQL schema provided in `supabase_schema.sql` in your Supabase SQL Editor
+3. Create a `.env` file with your credentials:
+   ```
+   VITE_SUPABASE_URL=your_project_url
+   VITE_SUPABASE_ANON_KEY=your_anon_key
+   ```
