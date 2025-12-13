@@ -1,31 +1,100 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description"
-    content="Oizom Championship League - Live cricket scoreboard manager with real-time scoring, analytics, and tournament management." />
-  <meta name="theme-color" content="#020617" />
+    content="Oizom Championship League - Premium cricket scoreboard with real-time scoring, analytics, and tournament management." />
+  <meta name="theme-color" content="#16A34A" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
   <title>Oizom Champions League</title>
 
-  <!-- Favicon -->
+  <!-- Favicon - Cricket Green -->
   <link rel="icon" type="image/svg+xml"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2310B981'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-family='Arial Black' font-size='16' fill='black'>OCL</text></svg>" />
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2316A34A'/%3E%3Cstop offset='100%25' style='stop-color:%2322C55E'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23grad)'/%3E%3Ctext x='50%25' y='52%25' dominant-baseline='central' text-anchor='middle' font-family='Arial Black' font-size='11' fill='%23FFFFFF' font-weight='bold'%3EOCL%3C/text%3E%3C/svg%3E" />
 
-  <!-- Fonts -->
+  <!-- Preconnect for faster font loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Premium Fonts -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;800&family=Rajdhani:wght@500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Teko:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
+
+  <style>
+    /* Critical CSS - Prevent FOUT */
+    html,
+    body {
+      background-color: #F8FAF5;
+      color: #14532D;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    /* Loading Spinner */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #F8FAF5 0%, #F0F5EB 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(22, 163, 74, 0.2);
+      border-top-color: #16A34A;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      margin-top: 20px;
+      font-family: 'Teko', sans-serif;
+      font-size: 24px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #16A34A;
+    }
+  </style>
 </head>
 
 <body>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading</div>
+  </div>
+
   <div id="root"></div>
+
+  <script>
+    // Hide loading screen once app is mounted
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('loading-screen')?.classList.add('hidden');
+      }, 500);
+    });
+  </script>
   <script type="module" src="/index.tsx"></script>
 </body>
 

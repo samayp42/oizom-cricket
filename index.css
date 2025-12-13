@@ -1,12 +1,53 @@
+/* Google Fonts Import - Must be first */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Teko:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================
-   OIZOM CHAMPIONSHIP LEAGUE - PREMIUM DESIGN SYSTEM
+   OIZOM CHAMPIONSHIP LEAGUE
+   FRESH CRICKET GREEN - PREMIUM LIGHT THEME
+   Stadium-Inspired Design System
    ============================================ */
 
-/* Base Reset & Typography */
+/* ============================================
+   CSS CUSTOM PROPERTIES
+   ============================================ */
+:root {
+  /* Fresh Cricket Green Palette */
+  --color-bg: #F8FAF5;
+  --color-bg-alt: #F0F5EB;
+  --color-surface: #FFFFFF;
+  --color-card: #FFFFFF;
+
+  --color-primary: #16A34A;
+  --color-primary-light: #22C55E;
+  --color-primary-dark: #15803D;
+  --color-secondary: #059669;
+  --color-emerald: #10B981;
+  --color-lime: #84CC16;
+
+  --color-boundary: #0EA5E9;
+  --color-six: #EAB308;
+  --color-wicket: #DC2626;
+
+  --color-text-primary: #14532D;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+
+  --color-border: #E2E8F0;
+  --color-border-green: #BBF7D0;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-hover: 0 10px 40px -10px rgba(22, 163, 74, 0.15), 0 4px 15px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 30px rgba(22, 163, 74, 0.2);
+}
+
+/* ============================================
+   BASE RESET & TYPOGRAPHY
+   ============================================ */
 @layer base {
   * {
     @apply antialiased;
@@ -15,37 +56,44 @@
   html {
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-sports-white dark:bg-sports-black text-sports-textDark dark:text-sports-text;
+    @apply bg-cricket-bg text-cricket-textPrimary font-sans;
+    min-height: 100vh;
     overflow-x: hidden;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   ::selection {
-    @apply bg-sports-primary text-black;
+    @apply bg-cricket-primary text-white;
   }
 }
 
 /* ============================================
-   SCROLLBAR STYLING
+   CUSTOM SCROLLBAR - Light Theme
    ============================================ */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: #F1F5F9;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-sports-primary/30 rounded-full;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-secondary));
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-sports-primary/50;
+  background: linear-gradient(180deg, var(--color-primary-dark), var(--color-primary));
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -58,90 +106,325 @@
 }
 
 /* ============================================
-   PREMIUM GLASSMORPHISM COMPONENTS
+   PREMIUM LIGHT THEME COMPONENTS
    ============================================ */
 @layer components {
 
-  /* Glass Panel - Main container style */
+  /* === GLASS PANELS (Light Theme) === */
   .glass-panel {
-    @apply bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 shadow-xl dark:shadow-2xl dark:shadow-black/20 transition-all duration-300;
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(248, 250, 245, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Glass Card - Secondary elevated style */
+  .glass-panel:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
   .glass-card {
-    @apply bg-gradient-to-br from-white/90 to-slate-50/80 dark:from-slate-800/80 dark:to-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 shadow-lg dark:shadow-xl dark:shadow-black/30 transition-all duration-300;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Ultra Glass - Maximum blur effect */
-  .glass-ultra {
-    @apply bg-white/60 dark:bg-slate-950/60 backdrop-blur-2xl backdrop-saturate-150 border border-white/20 dark:border-white/5 shadow-2xl;
+  .glass-card:hover {
+    border-color: var(--color-border-green);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
   }
 
-  /* Neon Glow Button */
-  .btn-neon {
-    @apply relative overflow-hidden bg-gradient-to-r from-sports-primary to-emerald-400 hover:from-emerald-400 hover:to-sports-primary text-black font-bold px-6 py-3 rounded-xl shadow-lg shadow-sports-primary/25 hover:shadow-xl hover:shadow-sports-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300;
+  /* === CARD VARIANTS === */
+  .card-cricket {
+    @apply bg-white rounded-3xl border border-cricket-border;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease;
   }
 
-  .btn-neon::before {
+  .card-cricket:hover {
+    border-color: var(--color-border-green);
+    box-shadow: var(--shadow-hover);
+  }
+
+  /* === PRIMARY BUTTON === */
+  .btn-primary {
+    @apply relative overflow-hidden font-display font-bold uppercase tracking-[0.15em] px-8 py-4 rounded-2xl;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(22, 163, 74, 0.4);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-primary::before {
     content: '';
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
-    background: linear-gradient(45deg, transparent 20%, rgba(255, 255, 255, 0.4) 50%, transparent 80%);
-    transform: translateX(-100%);
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
   }
 
-  .btn-neon:hover::before {
-    @apply opacity-100;
-    animation: shimmer 0.8s ease-out;
+  .btn-primary:hover::before {
+    left: 100%;
   }
 
-  /* Ghost Button */
+  /* === GHOST BUTTON === */
   .btn-ghost {
-    @apply px-6 py-3 rounded-xl font-bold bg-transparent border-2 border-slate-300 dark:border-white/20 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-400 dark:hover:border-white/30 active:scale-[0.98] transition-all duration-200;
+    @apply px-8 py-4 rounded-2xl font-display font-bold uppercase tracking-[0.15em];
+    background: transparent;
+    border: 2px solid var(--color-border);
+    color: var(--color-text-primary);
+    transition: all 0.3s ease;
   }
 
-  /* Gradient Text */
-  .text-gradient {
-    @apply bg-gradient-to-r from-sports-primary via-emerald-400 to-sports-accent bg-clip-text text-transparent;
+  .btn-ghost:hover {
+    border-color: var(--color-primary);
+    background: rgba(22, 163, 74, 0.05);
+    color: var(--color-primary);
+  }
+
+  /* === LIVE INDICATOR === */
+  .live-badge {
+    @apply inline-flex items-center gap-3 px-5 py-2.5 rounded-full font-display font-bold uppercase tracking-[0.2em] text-sm;
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    color: #DC2626;
+  }
+
+  .live-dot {
+    @apply relative w-3 h-3;
+  }
+
+  .live-dot::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-red-500;
+    animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .live-dot::after {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-red-500;
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+  }
+
+  /* === SCORE DISPLAY === */
+  .score-mega {
+    @apply font-display font-bold tracking-tight leading-none;
+    font-size: clamp(4rem, 18vw, 10rem);
+    background: linear-gradient(180deg,
+        var(--color-primary-dark) 0%,
+        var(--color-primary) 50%,
+        var(--color-primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(22, 163, 74, 0.15));
+  }
+
+  .score-display {
+    @apply font-display font-bold tracking-tight leading-none text-cricket-textPrimary;
+  }
+
+  /* === GRADIENT TEXT === */
+  .text-gradient-green {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .text-gradient-gold {
-    @apply bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 bg-clip-text text-transparent;
+    background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #F59E0B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  /* Floating Card with Hover */
-  .card-float {
-    @apply transition-all duration-500 ease-out;
+  /* === STAT CARD === */
+  .stat-card {
+    @apply relative overflow-hidden rounded-2xl p-6 bg-white border border-cricket-border;
+    box-shadow: var(--shadow-card);
   }
 
-  .card-float:hover {
-    @apply -translate-y-2 shadow-2xl;
-  }
-
-  /* Pulsing Live Indicator */
-  .live-pulse {
-    @apply relative;
-  }
-
-  .live-pulse::before {
+  .stat-card::before {
     content: '';
-    @apply absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    border-radius: 4px 4px 0 0;
   }
 
-  /* Score Display - Large Typography */
-  .score-display {
-    @apply font-display font-bold tracking-tight leading-none;
-    text-shadow: 0 0 40px rgba(16, 185, 129, 0.3);
+  /* === PREMIUM BADGES === */
+  .badge-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider;
+    background: rgba(22, 163, 74, 0.1);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+    color: var(--color-primary);
   }
 
-  /* Stat Badge */
-  .stat-badge {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-white/10 text-sm font-semibold;
+  .badge-gold {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider;
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    color: #B45309;
+  }
+
+  /* === SCORE BUTTONS === */
+  .score-btn {
+    @apply relative overflow-hidden rounded-2xl font-display font-bold text-3xl md:text-4xl transition-all duration-200;
+    box-shadow:
+      inset 0 -4px 0 rgba(0, 0, 0, 0.1),
+      0 4px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  .score-btn:active {
+    box-shadow:
+      inset 0 2px 0 rgba(0, 0, 0, 0.1),
+      0 2px 5px rgba(0, 0, 0, 0.05);
+    transform: scale(0.96) translateY(2px);
+  }
+
+  .score-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .score-btn-run {
+    background: linear-gradient(180deg, #F8FAF5 0%, #E2E8F0 100%);
+    border: 2px solid var(--color-border);
+    color: var(--color-text-primary);
+  }
+
+  .score-btn-boundary {
+    background: linear-gradient(180deg, #0EA5E9 0%, #0284C7 100%);
+    border: 2px solid #0EA5E9;
+    color: white;
+    box-shadow:
+      inset 0 -4px 0 rgba(0, 0, 0, 0.2),
+      0 4px 15px rgba(14, 165, 233, 0.4);
+  }
+
+  .score-btn-six {
+    background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+    border: 2px solid var(--color-primary);
+    color: white;
+    box-shadow:
+      inset 0 -4px 0 rgba(0, 0, 0, 0.2),
+      0 4px 15px rgba(22, 163, 74, 0.4);
+  }
+
+  .score-btn-wicket {
+    background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+    border: 2px solid #DC2626;
+    color: white;
+    box-shadow:
+      inset 0 -4px 0 rgba(0, 0, 0, 0.2),
+      0 4px 15px rgba(220, 38, 38, 0.4);
+  }
+
+  .score-btn-extra {
+    background: linear-gradient(180deg, #F1F5F9 0%, #E2E8F0 100%);
+    border: 2px solid var(--color-border);
+    color: var(--color-text-secondary);
+  }
+
+  /* === TABLE STYLES === */
+  .table-cricket {
+    @apply w-full;
+  }
+
+  .table-cricket thead {
+    @apply sticky top-0 z-10;
+    background: linear-gradient(180deg, rgba(248, 250, 245, 0.98) 0%, rgba(240, 245, 235, 0.95) 100%);
+  }
+
+  .table-cricket th {
+    @apply text-[10px] font-bold uppercase tracking-[0.15em] text-cricket-textMuted py-4 px-4;
+    border-bottom: 2px solid var(--color-border);
+  }
+
+  .table-cricket td {
+    @apply py-4 px-4;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .table-cricket tbody tr {
+    transition: all 0.2s ease;
+  }
+
+  .table-cricket tbody tr:hover {
+    background: rgba(22, 163, 74, 0.03);
+  }
+
+  /* === INPUT STYLES === */
+  .input-cricket {
+    @apply w-full px-5 py-4 rounded-xl outline-none transition-all duration-300;
+    background: white;
+    border: 2px solid var(--color-border);
+    color: var(--color-text-primary);
+  }
+
+  .input-cricket:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  }
+
+  .input-cricket::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  /* === SELECT STYLES === */
+  .select-cricket {
+    @apply w-full px-5 py-4 rounded-xl outline-none transition-all duration-300 appearance-none cursor-pointer;
+    background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
+    border: 2px solid var(--color-border);
+    color: var(--color-text-primary);
+  }
+
+  .select-cricket:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
   }
 }
 
 /* ============================================
    ANIMATIONS
    ============================================ */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);
@@ -156,171 +439,120 @@
 
   0%,
   100% {
-    transform: translateY(0px);
+    transform: translateY(0);
   }
 
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-15px);
   }
 }
 
-@keyframes pulse-glow {
+@keyframes glow-pulse {
 
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 20px rgba(22, 163, 74, 0.2);
   }
 
   50% {
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.6), 0 0 60px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 40px rgba(22, 163, 74, 0.35);
+  }
+}
+
+@keyframes score-pop {
+  0% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
 @keyframes slide-up {
-  from {
-    opacity: 0;
+  0% {
     transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scale-in {
-  from {
     opacity: 0;
-    transform: scale(0.9);
   }
 
-  to {
+  100% {
+    transform: translateY(0);
     opacity: 1;
-    transform: scale(1);
   }
 }
 
-@keyframes gradient-shift {
-
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes border-glow {
-
-  0%,
-  100% {
-    border-color: rgba(16, 185, 129, 0.3);
-  }
-
-  50% {
-    border-color: rgba(16, 185, 129, 0.8);
-  }
-}
-
-/* Utility Classes for Animations */
+/* Utility Animation Classes */
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float 6s ease-in-out infinite;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+.animate-score-pop {
+  animation: score-pop 0.3s ease-out;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.5s ease-out forwards;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.4s ease-out forwards;
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 3s ease infinite;
-}
-
-.animate-border-glow {
-  animation: border-glow 2s ease-in-out infinite;
-}
-
-/* Staggered Animation Delays */
-.stagger-1 {
-  animation-delay: 0.1s;
-}
-
-.stagger-2 {
-  animation-delay: 0.2s;
-}
-
-.stagger-3 {
-  animation-delay: 0.3s;
-}
-
-.stagger-4 {
-  animation-delay: 0.4s;
-}
-
-.stagger-5 {
-  animation-delay: 0.5s;
+  animation: slide-up 0.5s ease-out;
 }
 
 /* ============================================
-   SPECIAL EFFECTS
+   BACKGROUND EFFECTS (Light Theme)
    ============================================ */
-
-/* Gradient Orbs Background */
-.gradient-orb {
-  @apply absolute rounded-full blur-3xl opacity-30 pointer-events-none;
-}
-
-.gradient-orb-primary {
-  @apply gradient-orb bg-sports-primary;
-}
-
-.gradient-orb-accent {
-  @apply gradient-orb bg-sports-accent;
-}
-
-/* Mesh Gradient Background */
-.mesh-gradient {
-  background:
-    radial-gradient(at 40% 20%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, rgba(6, 182, 212, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-    radial-gradient(at 80% 50%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(16, 185, 129, 0.12) 0px, transparent 50%);
-}
-
-/* Grid Pattern Overlay */
-.grid-pattern {
+.bg-mesh-cricket {
   background-image:
-    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    radial-gradient(at 0% 0%, rgba(22, 163, 74, 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(5, 150, 105, 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(132, 204, 22, 0.03) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(22, 163, 74, 0.02) 0px, transparent 50%);
 }
 
-/* Noise Texture Overlay */
-.noise-overlay {
-  position: relative;
+.bg-grid-cricket {
+  background-image:
+    linear-gradient(rgba(22, 163, 74, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 163, 74, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
-.noise-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.02;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+/* Gradient Orbs (Light) */
+.orb-green {
+  @apply absolute rounded-full pointer-events-none;
+  background: radial-gradient(circle, rgba(22, 163, 74, 0.08) 0%, transparent 70%);
+  filter: blur(40px);
 }
 
-/* Safe area padding for iOS */
+.orb-lime {
+  @apply absolute rounded-full pointer-events-none;
+  background: radial-gradient(circle, rgba(132, 204, 22, 0.06) 0%, transparent 70%);
+  filter: blur(40px);
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+@media (max-width: 640px) {
+  .score-mega {
+    font-size: clamp(3rem, 20vw, 6rem);
+  }
+
+  .score-display {
+    font-size: clamp(2.5rem, 15vw, 5rem);
+  }
+}
+
+/* iOS Safe Areas */
 .safe-area-pb {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
@@ -329,42 +561,17 @@
   padding-top: env(safe-area-inset-top, 0);
 }
 
-/* ============================================
-   SCORE BUTTON SPECIAL STYLES
-   ============================================ */
-.score-btn {
-  @apply relative overflow-hidden rounded-2xl font-display font-bold text-3xl transition-all duration-150 active:scale-95;
-}
-
-.score-btn::after {
-  content: '';
-  @apply absolute inset-0 opacity-0 transition-opacity;
-  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
-}
-
-.score-btn:active::after {
-  @apply opacity-100;
-}
-
-/* ============================================
-   RESPONSIVE UTILITIES
-   ============================================ */
-@media (max-width: 640px) {
-  .score-display {
-    font-size: clamp(3rem, 15vw, 6rem);
-  }
-}
-
-/* High contrast mode support */
+/* High Contrast Support */
 @media (prefers-contrast: high) {
 
   .glass-panel,
-  .glass-card {
-    @apply border-2;
+  .glass-card,
+  .card-cricket {
+    border-width: 2px;
   }
 }
 
-/* Reduce motion support */
+/* Reduce Motion Support */
 @media (prefers-reduced-motion: reduce) {
 
   *,
@@ -374,4 +581,91 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ============================================
+   SPECIAL COMPONENT OVERRIDES
+   ============================================ */
+
+/* Premium Progress Bar */
+.progress-cricket {
+  @apply h-2 rounded-full overflow-hidden;
+  background: var(--color-border);
+}
+
+.progress-cricket-fill {
+  @apply h-full rounded-full;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+}
+
+/* Toggle Switch */
+.toggle-cricket {
+  @apply relative w-14 h-8 rounded-full cursor-pointer transition-all duration-300;
+  background: var(--color-border);
+}
+
+.toggle-cricket.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+.toggle-cricket::after {
+  content: '';
+  @apply absolute top-1 left-1 w-6 h-6 rounded-full bg-white transition-all duration-300;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-cricket.active::after {
+  transform: translateX(24px);
+}
+
+/* Glass Broadcast (keeping for compatibility, updated for light theme) */
+.glass-broadcast {
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(248, 250, 245, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Broadcast colors mapping (for component compatibility) */
+.bg-broadcast-bg {
+  background-color: var(--color-bg);
+}
+
+.bg-broadcast-surface {
+  background-color: var(--color-surface);
+}
+
+.text-broadcast-textMuted {
+  color: var(--color-text-muted);
+}
+
+.text-broadcast-textSecondary {
+  color: var(--color-text-secondary);
+}
+
+.text-broadcast-neonCyan {
+  color: var(--color-primary);
+}
+
+.text-broadcast-neonPurple {
+  color: var(--color-secondary);
+}
+
+.border-broadcast-neonCyan\/30 {
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+.bg-broadcast-neonCyan\/10 {
+  background-color: rgba(22, 163, 74, 0.1);
+}
+
+.from-broadcast-neonCyan {
+  --tw-gradient-from: var(--color-primary);
+}
+
+.to-broadcast-neonBlue {
+  --tw-gradient-to: var(--color-secondary);
 }

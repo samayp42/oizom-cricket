@@ -176,21 +176,22 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     if (isSupabaseEnabled) {
       supabase!.from('teams').insert({
         id: newTeam.id, name: newTeam.name, group: newTeam.group, stats: newTeam.stats
-      }).then();
+      }).then(({ error }) => {
+        if (error) console.error('Error adding team to Supabase:', error);
+      });
     }
   };
 
   const updateTeamGroup = (teamId: string, group: 'A' | 'B') => {
-    const teamIndex = data.teams.findIndex(t => t.id === teamId);
-    if (teamIndex === -1) return;
-
-    const updatedTeams = [...data.teams];
-    updatedTeams[teamIndex] = { ...updatedTeams[teamIndex], group };
-
+    const updatedTeams = data.teams.map(t =>
+      t.id === teamId ? { ...t, group } : t
+    );
     setData({ ...data, teams: updatedTeams });
 
     if (isSupabaseEnabled) {
-      supabase!.from('teams').update({ group }).eq('id', teamId).then();
+      supabase!.from('teams').update({ group }).eq('id', teamId).then(({ error }) => {
+        if (error) console.error('Error updating team group in Supabase:', error);
+      });
     }
   };
 
@@ -202,14 +203,13 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     setData(newData);
 
     if (isSupabaseEnabled) {
-      supabase!.from('teams').delete().eq('id', teamId).then();
+      supabase!.from('teams').delete().eq('id', teamId).then(({ error }) => {
+        if (error) console.error('Error deleting team from Supabase:', error);
+      });
     }
   };
 
   const addPlayer = (teamId: string, playerName: string, gender: 'M' | 'F') => {
-    const teamIdx = data.teams.findIndex(t => t.id === teamId);
-    if (teamIdx === -1) return;
-
     const newPlayer: Player = {
       id: Math.random().toString(36).substr(2, 9),
       name: playerName,
@@ -219,73 +219,101 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       stats: { runs: 0, balls: 0, wickets: 0, oversBowled: 0, runsConceded: 0, fours: 0, sixes: 0 }
     };
 
-    const updatedTeams = [...data.teams];
-    updatedTeams[teamIdx].players.push(newPlayer);
+    const updatedTeams = data.teams.map(t => {
+      if (t.id === teamId) {
+        return { ...t, players: [...t.players, newPlayer] };
+      }
+      return t;
+    });
+
     setData(prev => ({ ...prev, teams: updatedTeams }));
 
     if (isSupabaseEnabled) {
       supabase!.from('players').insert({
         id: newPlayer.id, team_id: teamId, name: newPlayer.name, role: 'player', gender, stats: newPlayer.stats
-      }).then();
+      }).then(({ error }) => {
+        if (error) console.error('Error adding player to Supabase:', error);
+      });
     }
   };
 
   const setPlayerGender = (teamId: string, playerId: string, gender: 'M' | 'F') => {
-    const teamIndex = data.teams.findIndex(t => t.id === teamId);
-    if (teamIndex === -1) return;
-
-    const updatedTeams = [...data.teams];
-    const player = updatedTeams[teamIndex].players.find(p => p.id === playerId);
-
-    if (player) {
-      player.gender = gender;
-      if (isSupabaseEnabled) {
-        supabase!.from('players').update({ gender }).eq('id', playerId).then();
+    const updatedTeams = data.teams.map(t => {
+      if (t.id === teamId) {
+        return {
+          ...t,
+          players: t.players.map(p =>
+            p.id === playerId ? { ...p, gender } : p
+          )
+        };
       }
-    }
-    setData(prev => ({ ...prev, teams: updatedTeams }));
-  };
+      return t;
+    });
 
-  const deletePlayer = (teamId: string, playerId: string) => {
-    const teamIdx = data.teams.findIndex(t => t.id === teamId);
-    if (teamIdx === -1) return;
-
-    const updatedTeams = [...data.teams];
-    updatedTeams[teamIdx].players = updatedTeams[teamIdx].players.filter(p => p.id !== playerId);
     setData(prev => ({ ...prev, teams: updatedTeams }));
 
     if (isSupabaseEnabled) {
-      supabase!.from('players').delete().eq('id', playerId).then();
+      supabase!.from('players').update({ gender }).eq('id', playerId).then(({ error }) => {
+        if (error) console.error('Error updating player gender in Supabase:', error);
+      });
+    }
+  };
+
+  const deletePlayer = (teamId: string, playerId: string) => {
+    const updatedTeams = data.teams.map(t => {
+      if (t.id === teamId) {
+        return {
+          ...t,
+          players: t.players.filter(p => p.id !== playerId)
+        };
+      }
+      return t;
+    });
+
+    setData(prev => ({ ...prev, teams: updatedTeams }));
+
+    if (isSupabaseEnabled) {
+      supabase!.from('players').delete().eq('id', playerId).then(({ error }) => {
+        if (error) console.error('Error deleting player from Supabase:', error);
+      });
     }
   };
 
   const setPlayerRole = (teamId: string, playerId: string, role: 'captain' | 'vice-captain' | 'player') => {
-    const teamIndex = data.teams.findIndex(t => t.id === teamId);
-    if (teamIndex === -1) return;
-
-    const updatedTeams = [...data.teams];
-    const team = updatedTeams[teamIndex];
-
-    // If setting C or VC, unset previous one
-    if (role !== 'player') {
-      const existingRolePlayer = team.players.find(p => p.role === role);
-      if (existingRolePlayer) {
-        existingRolePlayer.role = 'player';
-        if (isSupabaseEnabled) {
-          supabase!.from('players').update({ role: 'player' }).eq('id', existingRolePlayer.id).then();
+    const updatedTeams = data.teams.map(t => {
+      if (t.id === teamId) {
+        // If setting C or VC, unset previous one in the same team
+        let updatedPlayers = t.players;
+        if (role !== 'player') {
+          updatedPlayers = updatedPlayers.map(p => {
+            if (p.role === role) {
+              // Side effect for Supabase: Unset old role
+              if (isSupabaseEnabled) {
+                supabase!.from('players').update({ role: 'player' }).eq('id', p.id).then();
+              }
+              return { ...p, role: 'player' as const };
+            }
+            return p;
+          });
         }
-      }
-    }
 
-    const player = team.players.find(p => p.id === playerId);
-    if (player) {
-      player.role = role;
-      if (isSupabaseEnabled) {
-        supabase!.from('players').update({ role }).eq('id', playerId).then();
+        // Update target player
+        updatedPlayers = updatedPlayers.map(p =>
+          p.id === playerId ? { ...p, role } : p
+        );
+
+        return { ...t, players: updatedPlayers };
       }
-    }
+      return t;
+    });
 
     setData(prev => ({ ...prev, teams: updatedTeams }));
+
+    if (isSupabaseEnabled) {
+      supabase!.from('players').update({ role }).eq('id', playerId).then(({ error }) => {
+        if (error) console.error('Error updating player role in Supabase:', error);
+      });
+    }
   };
 
   const createMatch = (teamAId: string, teamBId: string, overs: number) => {
@@ -312,7 +340,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         play_status: newMatch.playStatus,
         total_overs: newMatch.totalOvers,
         group_stage: newMatch.groupStage
-      }).then();
+      }).then(({ error }) => {
+        if (error) console.error('Error creating match in Supabase:', error);
+      });
     }
   };
 
@@ -331,7 +361,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       supabase!.from('matches').update({
         toss: match.toss,
         status: match.status
-      }).eq('id', matchId).then();
+      }).eq('id', matchId).then(({ error }) => {
+        if (error) console.error('Error updating match toss in Supabase:', error);
+      });
     }
   };
 
@@ -396,7 +428,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         innings2: match.innings2,
         status: match.status,
         play_status: match.playStatus
-      }).eq('id', matchId).then();
+      }).eq('id', matchId).then(({ error }) => {
+        if (error) console.error('Error starting innings in Supabase:', error);
+      });
     }
   };
 
@@ -420,7 +454,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         innings1: match.innings1,
         innings2: match.innings2,
         play_status: match.playStatus
-      }).eq('id', matchId).then();
+      }).eq('id', matchId).then(({ error }) => {
+        if (error) console.error('Error setting next bowler in Supabase:', error);
+      });
     }
   };
 
@@ -564,6 +600,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
 
     if (isSupabaseEnabled) {
       // Update Match (Innings)
+      // Update Match (Innings)
       supabase!.from('matches').update({
         innings1: match.innings1,
         innings2: match.innings2,
@@ -571,14 +608,20 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         play_status: match.playStatus,
         winner_id: match.winnerId,
         result_message: match.resultMessage
-      }).eq('id', matchId).then();
+      }).eq('id', matchId).then(({ error }) => {
+        if (error) console.error('Error updating match score in Supabase:', error);
+      });
 
       // Update Stats (Teams/Players)
       if (batter) {
-        supabase!.from('players').update({ stats: batter.stats }).eq('id', batter.id).then();
+        supabase!.from('players').update({ stats: batter.stats }).eq('id', batter.id).then(({ error }) => {
+          if (error) console.error('Error updating batter stats:', error);
+        });
       }
       if (bowler) {
-        supabase!.from('players').update({ stats: bowler.stats }).eq('id', bowler.id).then();
+        supabase!.from('players').update({ stats: bowler.stats }).eq('id', bowler.id).then(({ error }) => {
+          if (error) console.error('Error updating bowler stats:', error);
+        });
       }
     }
   };
@@ -651,7 +694,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       supabase!.from('teams').upsert([
         { id: team1.id, name: team1.name, group: team1.group, stats: team1.stats },
         { id: team2.id, name: team2.name, group: team2.group, stats: team2.stats }
-      ]).then();
+      ]).then(({ error }) => {
+        if (error) console.error('Error updating team stats in Supabase:', error);
+      });
     }
   };
 
@@ -691,7 +736,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         innings1: match.innings1,
         innings2: match.innings2,
         status: match.status
-      }).eq('id', matchId).then();
+      }).eq('id', matchId).then(({ error }) => {
+        if (error) console.error('Error undoing last ball in Supabase:', error);
+      });
     }
   };
 
@@ -710,11 +757,29 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         status: match.status,
         winner_id: match.winnerId,
         result_message: match.resultMessage
-      }).eq('id', matchId).then();
+      }).eq('id', matchId).then(({ error }) => {
+        if (error) console.error('Error ending match in Supabase:', error);
+      });
     }
   };
 
-  const resetTournament = () => {
+  const resetTournament = async () => {
+    if (!confirm('Are you sure you want to reset the entire tournament? This will delete all teams, players, and matches. This action cannot be undone.')) {
+      return;
+    }
+
+    // Clear Supabase data
+    if (isSupabaseEnabled) {
+      try {
+        // Delete in order due to foreign key constraints: players -> teams, matches
+        await supabase!.from('players').delete().neq('id', ''); // Delete all
+        await supabase!.from('matches').delete().neq('id', ''); // Delete all
+        await supabase!.from('teams').delete().neq('id', ''); // Delete all
+      } catch (error) {
+        console.error('Error clearing Supabase data:', error);
+      }
+    }
+
     localStorage.removeItem('oizom_cricket_data');
     window.location.reload();
   };
@@ -740,7 +805,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       supabase!.from('matches').insert([
         { id: sf1.id, team_a_id: sf1.teamAId, team_b_id: sf1.teamBId, total_overs: 10, knockout_stage: 'SF1', status: 'scheduled', group_stage: false },
         { id: sf2.id, team_a_id: sf2.teamAId, team_b_id: sf2.teamBId, total_overs: 10, knockout_stage: 'SF2', status: 'scheduled', group_stage: false }
-      ]).then();
+      ]).then(({ error }) => {
+        if (error) console.error('Error generating knockouts in Supabase:', error);
+      });
     }
   };
 

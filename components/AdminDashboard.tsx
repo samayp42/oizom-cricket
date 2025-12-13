@@ -1,11 +1,416 @@
 import React, { useState } from 'react';
 import { useTournament } from '../context/TournamentContext';
-import { useNavigate } from 'react-router-dom';
-import { Shield, Plus, UserPlus, PlayCircle, LogOut, Trash2, Settings, Users } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useNavigate, Link } from 'react-router-dom';
+import { Shield, Plus, UserPlus, PlayCircle, LogOut, Trash2, Users, Home, RefreshCw, AlertTriangle, Crown, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
+// ============================================
+// TAB BUTTON
+// ============================================
+const TabButton = ({ label, icon: Icon, active, onClick }: { label: string; icon: any; active: boolean; onClick: () => void }) => (
+    <motion.button
+        onClick={onClick}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`flex-1 flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-display font-bold uppercase tracking-wider text-sm transition-all
+            ${active
+                ? 'bg-gradient-to-r from-cricket-primary to-cricket-primaryLight text-white shadow-glow-green'
+                : 'bg-white text-cricket-textMuted hover:text-cricket-primary border border-cricket-border'
+            }`}
+    >
+        <Icon size={18} />
+        <span className="hidden sm:inline">{label}</span>
+    </motion.button>
+);
+
+// ============================================
+// LOGIN SCREEN
+// ============================================
+const LoginScreen = ({ pin, setPin, login }: { pin: string, setPin: (p: string) => void, login: (p: string) => boolean }) => (
+    <div className="min-h-screen bg-cricket-bg flex items-center justify-center p-6 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-mesh-cricket" />
+        <div className="orb-green w-96 h-96 top-0 left-0 opacity-50" />
+        <div className="orb-lime w-80 h-80 bottom-0 right-0 opacity-40" />
+
+        <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 150, damping: 20 }}
+            className="relative z-10 w-full max-w-md"
+        >
+            <div className="bg-white rounded-[32px] p-6 md:p-12 border border-cricket-border shadow-premium relative overflow-hidden">
+                {/* Top Accent */}
+                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-cricket-primary via-cricket-primaryLight to-cricket-secondary" />
+
+                <div className="text-center mb-10">
+                    <motion.div
+                        className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-cricket-primary/10 to-cricket-secondary/10 border border-cricket-borderGreen mb-6"
+                        animate={{ rotate: [0, 5, -5, 0] }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                    >
+                        <Shield size={40} className="text-cricket-primary" />
+                    </motion.div>
+                    <h1 className="text-4xl font-display font-bold text-cricket-textPrimary uppercase tracking-wide mb-2">Admin Access</h1>
+                    <p className="text-cricket-textMuted">Enter security PIN to continue</p>
+                </div>
+
+                <div className="space-y-6">
+                    <input
+                        type="password"
+                        placeholder="• • • •"
+                        className="input-cricket text-center text-3xl tracking-[0.5em] font-mono"
+                        value={pin}
+                        onChange={(e) => setPin(e.target.value)}
+                        maxLength={4}
+                    />
+
+                    <motion.button
+                        onClick={() => { if (login(pin)) setPin(''); }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="btn-primary w-full text-lg"
+                    >
+                        Unlock System
+                    </motion.button>
+                </div>
+
+                <div className="mt-10 text-center">
+                    <Link to="/" className="text-cricket-textMuted hover:text-cricket-primary text-sm font-bold uppercase tracking-wider inline-flex items-center gap-2 transition-colors">
+                        <Home size={14} />
+                        Return to Dashboard
+                    </Link>
+                </div>
+            </div>
+        </motion.div>
+    </div>
+);
+
+// ============================================
+// MATCH CONTROL SECTION
+// ============================================
+const MatchControlSection = ({ navigate, resetTournament }: { navigate: any, resetTournament: () => void }) => (
+    <div className="space-y-8">
+        {/* New Match Card */}
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-3xl p-6 md:p-12 text-center border border-cricket-border shadow-card relative overflow-hidden group"
+        >
+            {/* Hover Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cricket-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
+
+            {/* Background */}
+            <div className="absolute inset-0 bg-mesh-cricket opacity-50" />
+            <div className="orb-green w-60 h-60 -top-30 -right-30 opacity-30" />
+
+            <div className="relative z-10">
+                <motion.div
+                    className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-cricket-primary/10 to-cricket-secondary/10 border border-cricket-borderGreen mb-8"
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                >
+                    <PlayCircle size={48} className="text-cricket-primary" />
+                </motion.div>
+
+                <h2 className="text-4xl md:text-5xl font-display font-bold text-cricket-textPrimary uppercase tracking-wide mb-4">
+                    Initiate Match
+                </h2>
+                <p className="text-cricket-textSecondary max-w-md mx-auto mb-10 text-lg">
+                    Launch the match wizard to configure teams, toss, and format settings.
+                </p>
+
+                <motion.button
+                    onClick={() => navigate('/setup')}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="btn-primary text-xl inline-flex items-center gap-4"
+                >
+                    Open Match Wizard
+                    <ChevronRight size={24} />
+                </motion.button>
+            </div>
+        </motion.div>
+
+        {/* Danger Zone */}
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="p-6 rounded-2xl border-2 border-cricket-wicket/20 bg-cricket-wicket/5"
+        >
+            <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-cricket-wicket/10 text-cricket-wicket">
+                    <AlertTriangle size={24} />
+                </div>
+                <div className="flex-1">
+                    <h3 className="text-cricket-wicket font-bold text-lg mb-1">Danger Zone</h3>
+                    <p className="text-cricket-textMuted text-sm mb-4">
+                        Reset all tournament data including teams, players, and matches.
+                    </p>
+                    <motion.button
+                        onClick={resetTournament}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="px-6 py-3 rounded-xl bg-cricket-wicket/10 border border-cricket-wicket/30 text-cricket-wicket font-bold uppercase tracking-wider text-xs hover:bg-cricket-wicket/20 transition-colors inline-flex items-center gap-2"
+                    >
+                        <RefreshCw size={14} />
+                        Reset Tournament
+                    </motion.button>
+                </div>
+            </div>
+        </motion.div>
+    </div>
+);
+
+// ============================================
+// TEAM MANAGEMENT SECTION
+// ============================================
+const TeamManagementSection = ({
+    teams, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender,
+    newTeamName, setNewTeamName, newTeamGroup, setNewTeamGroup, selectedTeamId, setSelectedTeamId,
+    newPlayerName, setNewPlayerName, newPlayerGender, setNewPlayerGender
+}: any) => {
+    const selectedTeam = teams.find((t: any) => t.id === selectedTeamId);
+
+    return (
+        <div className="space-y-8">
+            {/* Create Team Card */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-3xl p-6 md:p-8 border border-cricket-border shadow-card"
+            >
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="p-3 rounded-2xl bg-gradient-to-br from-cricket-primary to-cricket-primaryLight">
+                        <Plus className="text-white" size={24} />
+                    </div>
+                    <h3 className="font-display text-2xl font-bold text-cricket-textPrimary uppercase tracking-wide">Register New Team</h3>
+                </div>
+
+                <div className="flex flex-col lg:flex-row gap-4">
+                    <input
+                        type="text"
+                        placeholder="Enter Team Name"
+                        value={newTeamName}
+                        onChange={e => setNewTeamName(e.target.value)}
+                        className="input-cricket flex-[2]"
+                    />
+                    <div className="flex-1 relative">
+                        <select
+                            value={newTeamGroup}
+                            onChange={(e: any) => setNewTeamGroup(e.target.value)}
+                            className="select-cricket"
+                        >
+                            <option value="A">Group A</option>
+                            <option value="B">Group B</option>
+                        </select>
+                    </div>
+                    <motion.button
+                        onClick={() => { if (newTeamName) { addTeam(newTeamName, newTeamGroup); setNewTeamName(''); } }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="btn-primary whitespace-nowrap"
+                    >
+                        Create Team
+                    </motion.button>
+                </div>
+            </motion.div>
+
+            {/* Roster Manager */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-3xl p-6 md:p-8 border border-cricket-border shadow-card"
+            >
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="p-3 rounded-2xl bg-gradient-to-br from-cricket-secondary to-cricket-emerald">
+                        <UserPlus className="text-white" size={24} />
+                    </div>
+                    <h3 className="font-display text-2xl font-bold text-cricket-textPrimary uppercase tracking-wide">Manage Roster</h3>
+                </div>
+
+                <div className="mb-8">
+                    <select
+                        value={selectedTeamId}
+                        onChange={e => setSelectedTeamId(e.target.value)}
+                        className="select-cricket"
+                    >
+                        <option value="">Select Team to Edit...</option>
+                        {teams.map((t: any) => <option key={t.id} value={t.id}>{t.name} (Group {t.group})</option>)}
+                    </select>
+                </div>
+
+                <AnimatePresence>
+                    {selectedTeamId && selectedTeam && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-6"
+                        >
+                            {/* Add Player Form */}
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Player Name"
+                                    value={newPlayerName}
+                                    onChange={e => setNewPlayerName(e.target.value)}
+                                    className="input-cricket flex-1"
+                                />
+                                <div className="flex items-center gap-1 p-1.5 rounded-xl bg-cricket-bgAlt border border-cricket-border">
+                                    <motion.button
+                                        onClick={() => setNewPlayerGender('M')}
+                                        whileTap={{ scale: 0.9 }}
+                                        className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${newPlayerGender === 'M' ? 'bg-cricket-boundary text-white' : 'text-cricket-textMuted hover:text-cricket-textPrimary'}`}
+                                    >M</motion.button>
+                                    <motion.button
+                                        onClick={() => setNewPlayerGender('F')}
+                                        whileTap={{ scale: 0.9 }}
+                                        className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${newPlayerGender === 'F' ? 'bg-pink-500 text-white' : 'text-cricket-textMuted hover:text-cricket-textPrimary'}`}
+                                    >F</motion.button>
+                                </div>
+                                <motion.button
+                                    onClick={() => { if (newPlayerName) { addPlayer(selectedTeamId, newPlayerName, newPlayerGender); setNewPlayerName(''); } }}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="btn-ghost whitespace-nowrap"
+                                >
+                                    Add Player
+                                </motion.button>
+                            </div>
+
+                            {/* Player List */}
+                            <div className="rounded-2xl border border-cricket-border overflow-hidden">
+                                {/* Header */}
+                                <div className="p-5 bg-cricket-bgAlt border-b border-cricket-border flex flex-wrap gap-4 justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-cricket-textMuted">
+                                            {selectedTeam.name} • {selectedTeam.players.length} Players
+                                        </span>
+                                        <motion.button
+                                            onClick={() => {
+                                                const newGroup = selectedTeam.group === 'A' ? 'B' : 'A';
+                                                updateTeamGroup(selectedTeamId, newGroup);
+                                            }}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all
+                                                ${selectedTeam.group === 'A'
+                                                    ? 'bg-cricket-primary/10 text-cricket-primary border-cricket-primary/30'
+                                                    : 'bg-cricket-secondary/10 text-cricket-secondary border-cricket-secondary/30'
+                                                }`}
+                                        >
+                                            Group {selectedTeam.group} <span className="opacity-60 ml-1">(Switch)</span>
+                                        </motion.button>
+                                    </div>
+                                    <motion.button
+                                        onClick={() => { if (confirm('Delete entire team?')) { deleteTeam(selectedTeamId); setSelectedTeamId(''); } }}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="text-cricket-wicket text-[10px] font-bold uppercase flex items-center gap-2 bg-cricket-wicket/10 px-4 py-2 rounded-xl border border-cricket-wicket/20 hover:bg-cricket-wicket/20 transition-colors"
+                                    >
+                                        <Trash2 size={12} />
+                                        Delete Team
+                                    </motion.button>
+                                </div>
+
+                                {/* Players */}
+                                <div className="divide-y divide-cricket-border max-h-[400px] overflow-y-auto">
+                                    {selectedTeam.players.map((p: any, idx: number) => (
+                                        <motion.div
+                                            key={p.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                            className="p-5 flex justify-between items-center hover:bg-cricket-primary/5 transition-colors group"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                {/* Gender Badge */}
+                                                <motion.button
+                                                    onClick={() => setPlayerGender(selectedTeamId, p.id, p.gender === 'F' ? 'M' : 'F')}
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                    className={`w-8 h-8 rounded-xl text-xs font-bold border transition-all flex items-center justify-center
+                                                        ${p.gender === 'F'
+                                                            ? 'bg-pink-100 text-pink-600 border-pink-200 hover:bg-pink-200'
+                                                            : 'bg-blue-100 text-blue-600 border-blue-200 hover:bg-blue-200'
+                                                        }`}
+                                                    title="Toggle Gender"
+                                                >
+                                                    {p.gender || 'M'}
+                                                </motion.button>
+
+                                                {/* Player Name */}
+                                                <span className={`font-bold text-lg ${p.gender === 'F' ? 'text-pink-700' : 'text-cricket-textPrimary'}`}>
+                                                    {p.name}
+                                                </span>
+
+                                                {/* Role Badges */}
+                                                <div className="flex gap-2">
+                                                    <motion.button
+                                                        onClick={() => setPlayerRole(selectedTeamId, p.id, p.role === 'captain' ? 'player' : 'captain')}
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        className={`w-8 h-8 rounded-full text-[10px] font-black border transition-all flex items-center justify-center
+                                                            ${p.role === 'captain'
+                                                                ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white border-transparent shadow-lg'
+                                                                : 'text-cricket-textMuted border-cricket-border hover:border-yellow-400 hover:text-yellow-600'
+                                                            }`}
+                                                        title="Toggle Captain"
+                                                    >
+                                                        {p.role === 'captain' ? <Crown size={14} /> : 'C'}
+                                                    </motion.button>
+                                                    <motion.button
+                                                        onClick={() => setPlayerRole(selectedTeamId, p.id, p.role === 'vice-captain' ? 'player' : 'vice-captain')}
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        className={`w-8 h-8 rounded-full text-[10px] font-black border transition-all flex items-center justify-center
+                                                            ${p.role === 'vice-captain'
+                                                                ? 'bg-gradient-to-br from-cricket-primary to-cricket-secondary text-white border-transparent shadow-lg'
+                                                                : 'text-cricket-textMuted border-cricket-border hover:border-cricket-primary hover:text-cricket-primary'
+                                                            }`}
+                                                        title="Toggle Vice-Captain"
+                                                    >
+                                                        VC
+                                                    </motion.button>
+                                                </div>
+                                            </div>
+
+                                            {/* Delete Button */}
+                                            <motion.button
+                                                onClick={() => deletePlayer(selectedTeamId, p.id)}
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                className="opacity-0 group-hover:opacity-100 text-cricket-wicket p-2.5 hover:bg-cricket-wicket/10 rounded-xl transition-all"
+                                            >
+                                                <Trash2 size={18} />
+                                            </motion.button>
+                                        </motion.div>
+                                    ))}
+
+                                    {selectedTeam.players.length === 0 && (
+                                        <div className="p-12 text-center">
+                                            <Users size={40} className="mx-auto mb-4 text-cricket-textMuted opacity-30" />
+                                            <p className="text-cricket-textMuted">No players in roster. Add your first player above.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        </div>
+    );
+};
+
+// ============================================
+// MAIN ADMIN DASHBOARD
+// ============================================
 const AdminDashboard = () => {
-    const { isAdmin, login, logout, teams, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender } = useTournament();
+    const { isAdmin, login, logout, teams, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, resetTournament } = useTournament();
     const navigate = useNavigate();
     const [pin, setPin] = useState('');
     const [activeTab, setActiveTab] = useState<'match' | 'teams'>('match');
@@ -18,270 +423,93 @@ const AdminDashboard = () => {
     const [newPlayerGender, setNewPlayerGender] = useState<'M' | 'F'>('M');
 
     if (!isAdmin) {
-        return (
-            <div className="min-h-screen bg-sports-black flex items-center justify-center p-6">
-                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-sports-card border border-white/10 p-10 rounded-3xl w-full max-w-sm text-center shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sports-primary to-sports-accent"></div>
-                    <Shield className="w-16 h-16 text-sports-primary mx-auto mb-6" />
-                    <h1 className="text-3xl font-display font-bold text-white mb-2">Admin Access</h1>
-                    <p className="text-sports-muted text-sm mb-8">Enter security PIN to continue</p>
-
-                    <input
-                        type="password"
-                        placeholder="PIN"
-                        className="w-full bg-black/40 border border-white/10 p-4 rounded-xl text-white text-center text-2xl tracking-[1em] mb-6 focus:border-sports-primary focus:ring-1 focus:ring-sports-primary outline-none transition-all placeholder:tracking-normal placeholder:text-sm font-mono"
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value)}
-                    />
-                    <button
-                        onClick={() => { if (login(pin)) setPin(''); }}
-                        className="w-full bg-sports-primary hover:bg-emerald-400 text-sports-black font-bold py-4 rounded-xl transition-colors uppercase tracking-widest text-sm"
-                    >
-                        Unlock System
-                    </button>
-                </motion.div>
-            </div>
-        );
+        return <LoginScreen pin={pin} setPin={setPin} login={login} />;
     }
 
     return (
-        <div className="min-h-screen bg-sports-black pb-20 font-sans">
-            <nav className="bg-sports-card/50 backdrop-blur-md border-b border-white/5 p-4 sticky top-0 z-50">
-                <div className="container mx-auto flex justify-between items-center">
-                    <h1 className="text-lg font-tech font-bold text-white flex items-center gap-2 uppercase tracking-wider">
-                        <div className="w-8 h-8 rounded bg-sports-primary/10 flex items-center justify-center border border-sports-primary/20">
-                            <Shield size={16} className="text-sports-primary" />
+        <div className="min-h-screen bg-cricket-bg pb-20 safe-area-pb">
+            {/* Background */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute inset-0 bg-mesh-cricket opacity-50" />
+                <div className="orb-green w-[600px] h-[600px] -top-[300px] -right-[200px] opacity-30" />
+                <div className="orb-lime w-[500px] h-[500px] -bottom-[200px] -left-[200px] opacity-20" />
+            </div>
+
+            {/* Header */}
+            <nav className="bg-white/90 backdrop-blur-md border-b border-cricket-border sticky top-0 z-50">
+                <div className="container mx-auto px-4 h-16 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <Link to="/" className="p-2.5 -ml-2 rounded-xl text-cricket-textMuted hover:text-cricket-primary hover:bg-cricket-primary/5 transition-colors">
+                            <Home size={20} />
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-cricket-primary/10">
+                                <Shield size={18} className="text-cricket-primary" />
+                            </div>
+                            <span className="font-display font-bold uppercase tracking-[0.15em] text-sm text-cricket-textSecondary hidden sm:block">
+                                Control Panel
+                            </span>
                         </div>
-                        Control Panel
-                    </h1>
-                    <button onClick={logout} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"><LogOut size={20} /></button>
+                    </div>
+                    <motion.button
+                        onClick={logout}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-cricket-wicket hover:bg-cricket-wicket/10 transition-colors text-sm font-bold uppercase tracking-wider"
+                    >
+                        <LogOut size={18} />
+                        <span className="hidden sm:inline">Logout</span>
+                    </motion.button>
                 </div>
             </nav>
 
-            <div className="container mx-auto px-4 py-8 max-w-4xl">
-                {/* Tab Switcher */}
-                <div className="flex bg-white/5 p-1 rounded-xl mb-8">
-                    <button
-                        onClick={() => setActiveTab('match')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'match' ? 'bg-sports-surface shadow-lg text-white' : 'text-sports-muted hover:text-white'}`}
-                    >
-                        <PlayCircle size={16} /> Match Control
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('teams')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'teams' ? 'bg-sports-surface shadow-lg text-white' : 'text-sports-muted hover:text-white'}`}
-                    >
-                        <Users size={16} /> Team Manager
-                    </button>
+            {/* Main Content */}
+            <div className="container mx-auto px-4 py-8 max-w-5xl relative z-10">
+                {/* Tabs */}
+                <div className="flex gap-3 mb-10">
+                    <TabButton label="Match Control" icon={PlayCircle} active={activeTab === 'match'} onClick={() => setActiveTab('match')} />
+                    <TabButton label="Team Manager" icon={Users} active={activeTab === 'teams'} onClick={() => setActiveTab('teams')} />
                 </div>
 
-                <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    {activeTab === 'match' && (
-                        <div className="bg-gradient-to-br from-sports-card to-black border border-white/10 p-10 rounded-3xl text-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-sports-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                            <div className="relative z-10">
-                                <div className="w-20 h-20 bg-sports-accent/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-sports-accent/20">
-                                    <PlayCircle className="w-10 h-10 text-sports-accent" />
-                                </div>
-                                <h2 className="text-3xl font-display font-bold text-white mb-2">Initiate New Match</h2>
-                                <p className="text-sports-muted mb-8 max-w-md mx-auto">Launch the match setup wizard to configure teams, toss details, and overs.</p>
-                                <button
-                                    onClick={() => navigate('/setup')}
-                                    className="bg-white text-black font-bold text-lg px-10 py-4 rounded-2xl hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all"
-                                >
-                                    Open Match Wizard
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                {/* Tab Content */}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {activeTab === 'match' && (
+                            <MatchControlSection navigate={navigate} resetTournament={resetTournament} />
+                        )}
 
-                    {activeTab === 'teams' && (
-                        <div className="space-y-8">
-                            {/* Create Team Card */}
-                            <div className="glass-panel p-6 rounded-2xl">
-                                <h3 className="text-sports-primary font-tech font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
-                                    <Plus size={18} /> Register New Team
-                                </h3>
-                                <div className="flex flex-col md:flex-row gap-4">
-                                    <input
-                                        type="text"
-                                        placeholder="Enter Team Name"
-                                        value={newTeamName}
-                                        onChange={e => setNewTeamName(e.target.value)}
-                                        className="flex-[2] bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-sports-primary transition-colors"
-                                    />
-                                    <div className="flex-1 relative">
-                                        <select
-                                            value={newTeamGroup}
-                                            onChange={(e: any) => setNewTeamGroup(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-sports-primary appearance-none"
-                                        >
-                                            <option value="A">Group A</option>
-                                            <option value="B">Group B</option>
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-sports-muted">▼</div>
-                                    </div>
-                                    <button
-                                        onClick={() => { if (newTeamName) { addTeam(newTeamName, newTeamGroup); setNewTeamName(''); } }}
-                                        className="bg-sports-primary hover:bg-emerald-400 text-black px-8 py-4 rounded-xl font-bold transition-colors uppercase tracking-widest text-sm"
-                                    >
-                                        Create
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Roster Manager */}
-                            <div className="glass-panel p-6 rounded-2xl">
-                                <h3 className="text-sports-accent font-tech font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
-                                    <UserPlus size={18} /> Manage Roster
-                                </h3>
-
-                                <div className="mb-6">
-                                    <select
-                                        value={selectedTeamId}
-                                        onChange={e => setSelectedTeamId(e.target.value)}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-sports-accent appearance-none"
-                                    >
-                                        <option value="">Select Team to Edit...</option>
-                                        {teams.map(t => <option key={t.id} value={t.id}>{t.name} (Group {t.group})</option>)}
-                                    </select>
-                                </div>
-
-                                {selectedTeamId && (
-                                    <div className="animate-in fade-in slide-in-from-top-4">
-                                        <div className="flex gap-4 mb-6">
-                                            <input
-                                                type="text"
-                                                placeholder="Player Name"
-                                                value={newPlayerName}
-                                                onChange={e => setNewPlayerName(e.target.value)}
-                                                className="flex-1 bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-sports-accent"
-                                            />
-                                            <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-2">
-                                                <button
-                                                    onClick={() => setNewPlayerGender('M')}
-                                                    className={`p-2 rounded-lg text-sm font-bold transition-all ${newPlayerGender === 'M' ? 'bg-blue-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
-                                                >M</button>
-                                                <button
-                                                    onClick={() => setNewPlayerGender('F')}
-                                                    className={`p-2 rounded-lg text-sm font-bold transition-all ${newPlayerGender === 'F' ? 'bg-pink-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
-                                                >F</button>
-                                            </div>
-                                            <button
-                                                onClick={() => { if (newPlayerName) { addPlayer(selectedTeamId, newPlayerName, newPlayerGender); setNewPlayerName(''); } }}
-                                                className="bg-sports-surface hover:bg-white/10 text-white border border-white/10 px-8 rounded-xl font-bold uppercase text-sm tracking-wider"
-                                            >
-                                                Add Player
-                                            </button>
-                                        </div>
-
-                                        <div className="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
-                                            <div className="p-4 bg-white/5 flex justify-between items-center border-b border-white/5">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-xs font-bold uppercase text-sports-muted">Current Roster</span>
-                                                    <div className="h-4 w-px bg-white/10"></div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs text-slate-400 uppercase">Group:</span>
-                                                        <button
-                                                            onClick={() => {
-                                                                const team = teams.find(t => t.id === selectedTeamId);
-                                                                if (team) {
-                                                                    const newGroup = team.group === 'A' ? 'B' : 'A';
-                                                                    updateTeamGroup(selectedTeamId, newGroup);
-                                                                }
-                                                            }}
-                                                            className={`
-                                                        px-2 py-0.5 rounded text-[10px] font-bold uppercase border transition-all
-                                                        ${teams.find(t => t.id === selectedTeamId)?.group === 'A'
-                                                                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
-                                                                    : 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20 hover:bg-cyan-500/20'
-                                                                }
-                                                    `}
-                                                        >
-                                                            {teams.find(t => t.id === selectedTeamId)?.group}
-                                                            <span className="opacity-50 ml-1">(Switch)</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => { if (confirm('Delete entire team?')) { deleteTeam(selectedTeamId); setSelectedTeamId(''); } }} className="text-red-500 hover:text-red-400 text-[10px] font-bold uppercase flex items-center gap-1 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
-                                                    <Trash2 size={12} /> Delete Team
-                                                </button>
-                                            </div>
-                                            <div className="divide-y divide-white/5 max-h-96 overflow-y-auto">
-                                                {teams.find(t => t.id === selectedTeamId)?.players.map(p => (
-                                                    <div key={p.id} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors group">
-                                                        <div className="flex items-center gap-3">
-                                                            <button
-                                                                onClick={() => setPlayerGender(selectedTeamId, p.id, p.gender === 'F' ? 'M' : 'F')}
-                                                                className={`
-                                                                    w-6 h-6 rounded-md text-xs font-bold border transition-all flex items-center justify-center
-                                                                    ${p.gender === 'F'
-                                                                        ? 'bg-pink-500/20 text-pink-500 border-pink-500/30 hover:bg-pink-500/30'
-                                                                        : 'bg-blue-500/20 text-blue-500 border-blue-500/30 hover:bg-blue-500/30'
-                                                                    }
-                                                                `}
-                                                                title="Toggle Gender"
-                                                            >
-                                                                {p.gender || 'M'}
-                                                            </button>
-                                                            <span className={`font-medium ${p.gender === 'F' ? 'text-pink-200' : 'text-blue-100'}`}>
-                                                                {p.name}
-                                                            </span>
-                                                            <div className="flex gap-1 ml-2">
-                                                                <button
-                                                                    onClick={() => setPlayerRole(selectedTeamId, p.id, p.role === 'captain' ? 'player' : 'captain')}
-                                                                    className={`
-                                                                        w-6 h-6 rounded-full text-[10px] font-bold border transition-all flex items-center justify-center
-                                                                        ${p.role === 'captain'
-                                                                            ? 'bg-amber-500 text-black border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-                                                                            : 'text-slate-600 border-slate-700 hover:border-amber-500/50 hover:text-amber-500/50'
-                                                                        }
-                                                                    `}
-                                                                    title="Toggle Captain"
-                                                                >
-                                                                    C
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setPlayerRole(selectedTeamId, p.id, p.role === 'vice-captain' ? 'player' : 'vice-captain')}
-                                                                    className={`
-                                                                        w-6 h-6 rounded-full text-[10px] font-bold border transition-all flex items-center justify-center
-                                                                        ${p.role === 'vice-captain'
-                                                                            ? 'bg-cyan-500 text-black border-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]'
-                                                                            : 'text-slate-600 border-slate-700 hover:border-cyan-500/50 hover:text-cyan-500/50'
-                                                                        }
-                                                                    `}
-                                                                    title="Toggle Vice-Captain"
-                                                                >
-                                                                    VC
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => deletePlayer(selectedTeamId, p.id)}
-                                                            className="opacity-0 group-hover:opacity-100 text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-all"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                {teams.find(t => t.id === selectedTeamId)?.players.length === 0 && (
-                                                    <div className="p-8 text-center text-sports-muted text-sm italic">No players in roster.</div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </motion.div>
-            </div >
-        </div >
+                        {activeTab === 'teams' && (
+                            <TeamManagementSection
+                                teams={teams}
+                                addTeam={addTeam}
+                                deleteTeam={deleteTeam}
+                                addPlayer={addPlayer}
+                                deletePlayer={deletePlayer}
+                                updateTeamGroup={updateTeamGroup}
+                                setPlayerRole={setPlayerRole}
+                                setPlayerGender={setPlayerGender}
+                                newTeamName={newTeamName}
+                                setNewTeamName={setNewTeamName}
+                                newTeamGroup={newTeamGroup}
+                                setNewTeamGroup={setNewTeamGroup}
+                                selectedTeamId={selectedTeamId}
+                                setSelectedTeamId={setSelectedTeamId}
+                                newPlayerName={newPlayerName}
+                                setNewPlayerName={setNewPlayerName}
+                                newPlayerGender={newPlayerGender}
+                                setNewPlayerGender={setNewPlayerGender}
+                            />
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+        </div>
     );
 };
 
