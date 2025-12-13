@@ -70,7 +70,7 @@ const Layout = ({ children }: React.PropsWithChildren<{}>) => {
             className="fixed bottom-0 left-0 right-0 z-50 md:top-0 md:bottom-auto safe-area-pb"
           >
             <div className="mx-4 mb-4 md:mb-0 md:mx-0">
-              <div className="glass-ultra md:rounded-none rounded-3xl border border-slate-200/50 dark:border-white/10 shadow-2xl md:shadow-lg">
+              <div className="bg-emerald-50 md:bg-white md:rounded-none rounded-3xl border border-emerald-100 shadow-2xl md:shadow-lg">
                 <div className="container mx-auto px-4 md:px-6 h-20 md:h-16 flex items-center justify-between">
                   {/* Logo - Hidden on mobile, visible on desktop */}
                   <Link to="/" className="hidden md:flex items-center gap-3 group">
