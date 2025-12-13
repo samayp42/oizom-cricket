@@ -6,7 +6,8 @@ import MatchSetup from './components/MatchSetup';
 import Scorer from './components/Scorer';
 import AdminDashboard from './components/AdminDashboard';
 import MatchCenter from './components/MatchCenter';
-import { Shield, Home, Tv, Sun, Moon, Zap } from 'lucide-react';
+import { Shield, Home, Tv, Zap } from 'lucide-react';
+
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Navigation Item Component
@@ -41,71 +42,22 @@ const NavItem = ({ to, icon: Icon, label, isActive }: { to: string; icon: any; l
 );
 
 // Theme Toggle Button
-const ThemeToggle = ({ theme, toggleTheme }: { theme: string; toggleTheme: () => void }) => (
-  <motion.button
-    onClick={toggleTheme}
-    className="p-3 rounded-2xl bg-white dark:bg-sports-surface shadow-lg border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white hover:shadow-xl transition-all duration-300"
-    whileHover={{ scale: 1.05, rotate: 15 }}
-    whileTap={{ scale: 0.95 }}
-  >
-    <AnimatePresence mode="wait">
-      {theme === 'dark' ? (
-        <motion.div
-          key="sun"
-          initial={{ rotate: -90, opacity: 0 }}
-          animate={{ rotate: 0, opacity: 1 }}
-          exit={{ rotate: 90, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Sun size={20} />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="moon"
-          initial={{ rotate: 90, opacity: 0 }}
-          animate={{ rotate: 0, opacity: 1 }}
-          exit={{ rotate: -90, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Moon size={20} />
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </motion.button>
-);
+
+
 
 // Main Layout Component
 const Layout = ({ children }: React.PropsWithChildren<{}>) => {
   const location = useLocation();
   const hideNav = ['/scorer', '/live'].includes(location.pathname);
 
-  // Theme State
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('oizom_theme') || 'dark';
-    }
-    return 'dark';
-  });
 
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('oizom_theme', theme);
-  }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
 
   return (
     <div className="min-h-screen bg-sports-white dark:bg-sports-black text-slate-900 dark:text-white font-sans transition-colors duration-500">
       {/* Fixed Theme Toggle */}
-      <div className="fixed top-4 right-4 z-[100]">
-        <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-      </div>
+
+
 
       {/* Navigation */}
       <AnimatePresence>
@@ -120,8 +72,8 @@ const Layout = ({ children }: React.PropsWithChildren<{}>) => {
             <div className="mx-4 mb-4 md:mb-0 md:mx-0">
               <div className="glass-ultra md:rounded-none rounded-3xl border border-slate-200/50 dark:border-white/10 shadow-2xl md:shadow-lg">
                 <div className="container mx-auto px-4 md:px-6 h-20 md:h-16 flex items-center justify-between">
-                  {/* Logo */}
-                  <Link to="/" className="flex items-center gap-3 group">
+                  {/* Logo - Hidden on mobile, visible on desktop */}
+                  <Link to="/" className="hidden md:flex items-center gap-3 group">
                     <motion.div
                       className="w-10 h-10 bg-gradient-to-br from-sports-primary to-emerald-400 rounded-xl flex items-center justify-center font-display font-black text-black text-lg shadow-lg shadow-sports-primary/30"
                       whileHover={{ rotate: [0, -5, 5, 0], scale: 1.05 }}
@@ -139,8 +91,8 @@ const Layout = ({ children }: React.PropsWithChildren<{}>) => {
                     </div>
                   </Link>
 
-                  {/* Navigation Items */}
-                  <div className="flex items-center gap-1 md:gap-2">
+                  {/* Navigation Items - Centered and spaced on mobile */}
+                  <div className="flex flex-1 md:flex-none items-center justify-around md:justify-end gap-1 md:gap-2">
                     <NavItem
                       to="/"
                       icon={Home}
