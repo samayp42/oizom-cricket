@@ -122,6 +122,114 @@ const PointsTable = ({ teams, group }: { teams: any[]; group: 'A' | 'B' }) => {
 };
 
 // ============================================
+// BADMINTON POINTS TABLE
+// ============================================
+// ============================================
+// KNOCKOUT POINTS TABLE
+// ============================================
+const KnockoutPointsTable = ({ teams, group, gameType }: { teams: any[]; group: 'A' | 'B'; gameType: any }) => {
+  const getStats = (t: any) => {
+    if (gameType === 'badminton') return t.badmintonStats;
+    if (gameType === 'table_tennis') return t.tableTennisStats;
+    if (gameType === 'chess') return t.chessStats;
+    if (gameType === 'carrom') return t.carromStats;
+    return {};
+  };
+
+  const groupTeams = teams.filter(t => t.group === group)
+    .sort((a, b) => {
+      const ptsA = getStats(a)?.points || 0;
+      const ptsB = getStats(b)?.points || 0;
+      return ptsB - ptsA;
+    });
+
+  const getColors = () => {
+    switch (gameType) {
+      case 'badminton': return 'from-blue-600 to-indigo-500';
+      case 'table_tennis': return 'from-orange-500 to-red-500';
+      case 'chess': return 'from-slate-700 to-slate-600';
+      case 'carrom': return 'from-amber-500 to-yellow-500';
+      default: return 'from-blue-600 to-indigo-500';
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="card-cricket overflow-hidden"
+    >
+      <div className={`px-6 py-4 bg-gradient-to-r ${getColors()} flex items-center gap-3`}>
+        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+          <Activity size={20} className="text-white" />
+        </div>
+        <div>
+          <h3 className="font-display text-xl font-bold text-white uppercase tracking-wide">Group {group}</h3>
+          <p className="text-white/70 text-xs">{groupTeams.length} Teams</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="table-cricket">
+          <thead>
+            <tr>
+              <th className="text-left pl-6">#</th>
+              <th className="text-left">Team</th>
+              <th className="text-center">P</th>
+              <th className="text-center">W</th>
+              <th className="text-center">L</th>
+              <th className="text-center pr-6">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groupTeams.map((team, idx) => {
+              const stats = getStats(team) || { played: 0, won: 0, lost: 0, points: 0 };
+              const isTop = idx < 2;
+              return (
+                <motion.tr
+                  key={team.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={isTop ? 'bg-slate-50' : ''}
+                >
+                  <td className="pl-6">
+                    <span className={`w-7 h-7 inline-flex items-center justify-center rounded-lg text-sm font-bold ${isTop ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      {idx + 1}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-display font-bold text-sm text-slate-600 border border-slate-200">
+                        {team.name?.slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="font-bold text-slate-800">{team.name}</span>
+                    </div>
+                  </td>
+                  <td className="text-center font-mono text-slate-500">{stats.played}</td>
+                  <td className="text-center font-mono font-bold text-green-600">{stats.won}</td>
+                  <td className="text-center font-mono text-red-400">{stats.lost}</td>
+                  <td className="text-center pr-6">
+                    <span className="font-display text-2xl font-bold text-slate-800">{stats.points}</span>
+                  </td>
+                </motion.tr>
+              );
+            })}
+            {groupTeams.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-center py-10 text-cricket-textMuted">
+                  No teams in this group yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </motion.div>
+  );
+};
+
+// ============================================
 // LIVE MATCH HERO
 // ============================================
 const LiveMatchHero = ({ match, teams }: { match: any; teams: any[] }) => {
@@ -318,19 +426,100 @@ const TopPerformerCard = ({ title, player, value, subtext, icon: Icon, gradient 
 );
 
 // ============================================
+// OVERALL LEADERBOARD
+// ============================================
+const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
+  const leaderboard = teams.map(team => {
+    const cricketPts = team.stats.points || 0;
+    const badmintonPts = team.badmintonStats?.points || 0;
+    const ttPts = team.tableTennisStats?.points || 0;
+    const chessPts = team.chessStats?.points || 0;
+    const carromPts = team.carromStats?.points || 0;
+    const total = cricketPts + badmintonPts + ttPts + chessPts + carromPts;
+    return { ...team, cricketPts, badmintonPts, ttPts, chessPts, carromPts, total };
+  }).sort((a, b) => b.total - a.total);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
+      <div className="flex items-center gap-3 mb-6">
+        <Trophy size={24} className="text-yellow-500" />
+        <h2 className="font-display text-2xl font-bold text-cricket-textPrimary uppercase tracking-wide">
+          Championship Leaderboard
+        </h2>
+      </div>
+      <div className="card-cricket overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="table-cricket">
+            <thead>
+              <tr>
+                <th className="pl-6 text-left">#</th>
+                <th className="text-left">Team</th>
+                <th className="text-center">Cricket</th>
+                <th className="text-center">Badminton</th>
+                <th className="text-center">TT</th>
+                <th className="text-center">Chess</th>
+                <th className="text-center">Carrom</th>
+                <th className="text-center pr-6 font-bold text-cricket-primary">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboard.map((team, idx) => (
+                <tr key={team.id} className={idx < 3 ? 'bg-yellow-50/50' : ''}>
+                  <td className="pl-6">
+                    <span className={`w-8 h-8 inline-flex items-center justify-center rounded-full text-sm font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-slate-100 text-slate-700' : idx === 2 ? 'bg-orange-50 text-orange-700' : 'text-slate-400'}`}>
+                      {idx + 1}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-500">
+                        {team.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <span className={`font-bold ${idx < 3 ? 'text-slate-900' : 'text-slate-700'}`}>{team.name}</span>
+                    </div>
+                  </td>
+                  <td className="text-center font-mono text-slate-500">{team.cricketPts}</td>
+                  <td className="text-center font-mono text-slate-500">{team.badmintonPts}</td>
+                  <td className="text-center font-mono text-slate-500">{team.ttPts}</td>
+                  <td className="text-center font-mono text-slate-500">{team.chessPts}</td>
+                  <td className="text-center font-mono text-slate-500">{team.carromPts}</td>
+                  <td className="text-center pr-6 font-display font-bold text-xl text-cricket-primary">{team.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// ============================================
 // MAIN DASHBOARD
 // ============================================
 const Dashboard = () => {
-  const { teams, matches, activeMatch } = useTournament();
+  const { teams, matches, activeMatch, activeGame, setActiveGame, knockoutMatches } = useTournament();
 
-  // Calculate top performers
+  // Calculate top performers (Cricket Only for now)
   const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
-  const topRunScorer = allPlayers.reduce((top, p) => (!top || p.stats.runs > top.stats.runs) ? p : top, null as any);
-  const topWicketTaker = allPlayers.reduce((top, p) => (!top || p.stats.wickets > top.stats.wickets) ? p : top, null as any);
+  const topRunScorer = activeGame === 'cricket' ? allPlayers.reduce((top, p) => (!top || p.stats.runs > top.stats.runs) ? p : top, null as any) : null;
+  const topWicketTaker = activeGame === 'cricket' ? allPlayers.reduce((top, p) => (!top || p.stats.wickets > top.stats.wickets) ? p : top, null as any) : null;
 
   // Stats
-  const completedMatches = matches.filter(m => m.status === 'completed').length;
+  const currentMatches = activeGame === 'cricket' ? matches : knockoutMatches.filter(m => m.gameType === activeGame);
+  const completedMatches = currentMatches.filter((m: any) => m.status === 'completed').length;
   const totalPlayers = allPlayers.length;
+
+  // Points 
+  const totalPoints = teams.reduce((acc, t) => {
+    let pts = 0;
+    if (activeGame === 'cricket') pts = t.stats.points;
+    else if (activeGame === 'badminton') pts = t.badmintonStats?.points || 0;
+    else if (activeGame === 'table_tennis') pts = t.tableTennisStats?.points || 0;
+    else if (activeGame === 'chess') pts = t.chessStats?.points || 0;
+    else if (activeGame === 'carrom') pts = t.carromStats?.points || 0;
+    return acc + pts;
+  }, 0);
 
   return (
     <div className="min-h-screen bg-cricket-bg pb-12">
@@ -349,24 +538,65 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-cricket-primary/10 border border-cricket-borderGreen mb-6">
-            <Trophy size={18} className="text-cricket-primary" />
-            <span className="text-sm font-bold uppercase tracking-[0.15em] text-cricket-primary">Championship League</span>
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
+            {['cricket', 'badminton', 'table_tennis', 'chess', 'carrom'].map((game) => (
+              <button
+                key={game}
+                onClick={() => setActiveGame(game as any)}
+                className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all 
+                    ${activeGame === game
+                    ? 'bg-slate-800 text-white shadow-lg'
+                    : 'bg-white text-slate-400 hover:text-slate-600'}`}
+              >
+                {game.replace('_', ' ')}
+              </button>
+            ))}
           </div>
-          <h1 className="font-display text-5xl md:text-7xl font-bold text-cricket-textPrimary uppercase tracking-wide mb-2">
-            Oizom Cricket
+          <h1 className="font-display text-4xl md:text-6xl font-bold text-cricket-textPrimary uppercase tracking-wide mb-2 transition-all duration-300">
+            {activeGame.replace('_', ' ')}
           </h1>
           <p className="text-cricket-textSecondary text-lg">Live Scores & Tournament Standings</p>
         </motion.div>
 
+        {/* Overall Leaderboard */}
+        <OverallLeaderboard teams={teams} />
+
         {/* Live Match Section */}
-        <div className="mb-12">
-          {activeMatch && activeMatch.status === 'live' ? (
-            <LiveMatchHero match={activeMatch} teams={teams} />
-          ) : (
-            <NoMatchPlaceholder />
-          )}
-        </div>
+        {activeGame === 'cricket' && (
+          <div className="mb-12">
+            {activeMatch && activeMatch.status === 'live' ? (
+              <LiveMatchHero match={activeMatch} teams={teams} />
+            ) : (
+              <NoMatchPlaceholder />
+            )}
+          </div>
+        )}
+
+        {/* Badminton/Knockout Recent Matches (Instead of Live Hero for now) */}
+        {activeGame !== 'cricket' && (
+          <div className="mb-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {knockoutMatches.filter((m: any) => m.gameType === activeGame && m.status === 'scheduled').slice(0, 3).map(match => {
+              const teamA = teams.find(t => t.id === match.teamAId);
+              const teamB = teams.find(t => t.id === match.teamBId);
+              return (
+                <div key={match.id} className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 flex flex-col items-center justify-center text-center">
+                  <span className="text-xs font-bold uppercase tracking-widest text-blue-500 mb-4">{match.stage.replace('_', ' ')}</span>
+                  <div className="flex items-center gap-4 mb-4">
+                    <span className="font-bold text-slate-800">{teamA?.name}</span>
+                    <span className="text-slate-300 font-black">VS</span>
+                    <span className="font-bold text-slate-800">{teamB?.name}</span>
+                  </div>
+                  <span className="text-xs font-medium text-slate-400">Scheduled</span>
+                </div>
+              )
+            })}
+            {knockoutMatches.filter((m: any) => m.gameType === activeGame && m.status === 'scheduled').length === 0 && (
+              <div className="col-span-full bg-white p-12 rounded-3xl shadow-sm border border-slate-100 text-center text-slate-400">
+                No upcoming matches scheduled.
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Quick Stats */}
         <motion.div
@@ -378,11 +608,11 @@ const Dashboard = () => {
           <StatCard title="Teams" value={teams.length} subtext="Registered" icon={Users} color="text-cricket-primary" />
           <StatCard title="Players" value={totalPlayers} subtext="Total" icon={Target} color="text-cricket-secondary" />
           <StatCard title="Matches" value={completedMatches} subtext="Completed" icon={Activity} color="text-cricket-boundary" />
-          <StatCard title="Points" value={completedMatches * 2} subtext="Awarded" icon={Award} color="text-cricket-six" />
+          <StatCard title="Points" value={totalPoints} subtext="Awarded" icon={Award} color="text-cricket-six" />
         </motion.div>
 
-        {/* Top Performers */}
-        {(topRunScorer || topWicketTaker) && (
+        {/* Top Performers (Cricket Only) */}
+        {activeGame === 'cricket' && (topRunScorer || topWicketTaker) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -426,11 +656,22 @@ const Dashboard = () => {
         >
           <div className="flex items-center gap-3 mb-6">
             <TrendingUp size={20} className="text-cricket-primary" />
-            <h2 className="font-display text-2xl font-bold text-cricket-textPrimary uppercase tracking-wide">Tournament Standings</h2>
+            <h2 className="font-display text-2xl font-bold text-cricket-textPrimary uppercase tracking-wide">
+              {activeGame.replace('_', ' ')} Standings
+            </h2>
           </div>
           <div className="grid lg:grid-cols-2 gap-6">
-            <PointsTable teams={teams} group="A" />
-            <PointsTable teams={teams} group="B" />
+            {activeGame === 'cricket' ? (
+              <>
+                <PointsTable teams={teams} group="A" />
+                <PointsTable teams={teams} group="B" />
+              </>
+            ) : (
+              <>
+                <KnockoutPointsTable teams={teams} group="A" gameType={activeGame} />
+                <KnockoutPointsTable teams={teams} group="B" gameType={activeGame} />
+              </>
+            )}
           </div>
         </motion.div>
 
@@ -451,7 +692,7 @@ const Dashboard = () => {
               Admin Panel
             </motion.button>
           </Link>
-          {activeMatch && (
+          {activeGame === 'cricket' && activeMatch && (
             <Link to="/scoring">
               <motion.button
                 whileHover={{ scale: 1.03 }}

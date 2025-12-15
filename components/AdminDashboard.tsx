@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Plus, UserPlus, PlayCircle, LogOut, Trash2, Users, Home, RefreshCw, AlertTriangle, Crown, ChevronRight } from 'lucide-react';
+import { Shield, Plus, UserPlus, PlayCircle, LogOut, Trash2, Users, Home, RefreshCw, AlertTriangle, Crown, ChevronRight, Trophy, Medal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GameSelector } from './GameSelector';
+import { GameType } from '../types';
 
 // ============================================
 // TAB BUTTON
@@ -89,79 +91,138 @@ const LoginScreen = ({ pin, setPin, login }: { pin: string, setPin: (p: string) 
 // ============================================
 // MATCH CONTROL SECTION
 // ============================================
-const MatchControlSection = ({ navigate, resetTournament }: { navigate: any, resetTournament: () => void }) => (
+// ============================================
+// CRICKET MATCH CONTROL
+// ============================================
+const CricketMatchControl = ({ navigate, resetTournament }: { navigate: any, resetTournament: () => void }) => (
     <div className="space-y-8">
-        {/* New Match Card */}
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-3xl p-6 md:p-12 text-center border border-cricket-border shadow-card relative overflow-hidden group"
         >
-            {/* Hover Effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-cricket-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
-
-            {/* Background */}
             <div className="absolute inset-0 bg-mesh-cricket opacity-50" />
-            <div className="orb-green w-60 h-60 -top-30 -right-30 opacity-30" />
 
             <div className="relative z-10">
-                <motion.div
-                    className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-cricket-primary/10 to-cricket-secondary/10 border border-cricket-borderGreen mb-8"
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                >
-                    <PlayCircle size={48} className="text-cricket-primary" />
-                </motion.div>
-
-                <h2 className="text-4xl md:text-5xl font-display font-bold text-cricket-textPrimary uppercase tracking-wide mb-4">
-                    Initiate Match
-                </h2>
-                <p className="text-cricket-textSecondary max-w-md mx-auto mb-10 text-lg">
-                    Launch the match wizard to configure teams, toss, and format settings.
-                </p>
-
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-green-50 text-green-600 mb-8">
+                    <PlayCircle size={48} />
+                </div>
+                <h2 className="text-4xl font-display font-bold text-slate-800 mb-4 uppercase">Cricket Match</h2>
                 <motion.button
                     onClick={() => navigate('/setup')}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                     className="btn-primary text-xl inline-flex items-center gap-4"
                 >
-                    Open Match Wizard
-                    <ChevronRight size={24} />
+                    Start Match <ChevronRight size={24} />
                 </motion.button>
             </div>
         </motion.div>
 
-        {/* Danger Zone */}
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="p-6 rounded-2xl border-2 border-cricket-wicket/20 bg-cricket-wicket/5"
-        >
-            <div className="flex items-start gap-4">
-                <div className="p-3 rounded-xl bg-cricket-wicket/10 text-cricket-wicket">
-                    <AlertTriangle size={24} />
-                </div>
-                <div className="flex-1">
-                    <h3 className="text-cricket-wicket font-bold text-lg mb-1">Danger Zone</h3>
-                    <p className="text-cricket-textMuted text-sm mb-4">
-                        Reset all tournament data including teams, players, and matches.
-                    </p>
-                    <motion.button
-                        onClick={resetTournament}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="px-6 py-3 rounded-xl bg-cricket-wicket/10 border border-cricket-wicket/30 text-cricket-wicket font-bold uppercase tracking-wider text-xs hover:bg-cricket-wicket/20 transition-colors inline-flex items-center gap-2"
-                    >
-                        <RefreshCw size={14} />
-                        Reset Tournament
-                    </motion.button>
-                </div>
-            </div>
-        </motion.div>
+        {/* Reset Button (Keep existing danger zone here or shared?) Keeping here for now */}
+        <div className="p-6 rounded-2xl border-2 border-red-100 bg-red-50">
+            <button onClick={resetTournament} className="text-red-500 font-bold uppercase text-xs flex items-center gap-2">
+                <RefreshCw size={14} /> Reset Tournament
+            </button>
+        </div>
     </div>
 );
+
+// ============================================
+// BADMINTON MATCH CONTROL
+// ============================================
+// ============================================
+// KNOCKOUT MATCH CONTROL
+// ============================================
+const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, teams, gameType }: any) => {
+    const gameMatches = knockoutMatches.filter((m: any) => m.gameType === gameType);
+
+    return (
+        <div className="space-y-8">
+            {/* New Match Button */}
+            <motion.button
+                onClick={() => navigate(`/knockout-setup?game=${gameType}`)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-8 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-display font-black text-2xl uppercase tracking-widest shadow-xl shadow-blue-500/20 flex items-center justify-center gap-4"
+            >
+                <Plus size={32} />
+                New {gameType.replace('_', ' ')} Match
+            </motion.button>
+
+            {/* Active/Scheduled Matches List */}
+            <div className="grid grid-cols-1 gap-4">
+                {gameMatches.filter((m: any) => m.status === 'scheduled').map((match: any) => {
+                    const teamA = teams.find((t: any) => t.id === match.teamAId);
+                    const teamB = teams.find((t: any) => t.id === match.teamBId);
+                    return (
+                        <motion.div
+                            key={match.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6"
+                        >
+                            <div className="flex items-center gap-8 flex-1">
+                                <div className="flex flex-col items-center">
+                                    <span className="font-bold text-slate-800 text-lg">{teamA?.name}</span>
+                                    {match.matchType === 'doubles' && <span className="text-xs text-slate-400">Doubles</span>}
+                                </div>
+                                <div className="text-slate-300 font-black text-xl">VS</div>
+                                <div className="flex flex-col items-center">
+                                    <span className="font-bold text-slate-800 text-lg">{teamB?.name}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="px-4 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
+                                    {match.stage.replace('_', ' ')} • {match.pointsAwarded} pts
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => { if (confirm(`Declare ${teamA?.name} as winner?`)) resolveMatch(match.id, match.teamAId); }}
+                                    className="px-4 py-2 rounded-lg bg-green-50 text-green-600 font-bold text-xs uppercase hover:bg-green-100"
+                                >
+                                    {teamA?.name} Won
+                                </button>
+                                <button
+                                    onClick={() => { if (confirm(`Declare ${teamB?.name} as winner?`)) resolveMatch(match.id, match.teamBId); }}
+                                    className="px-4 py-2 rounded-lg bg-green-50 text-green-600 font-bold text-xs uppercase hover:bg-green-100"
+                                >
+                                    {teamB?.name} Won
+                                </button>
+                            </div>
+                        </motion.div>
+                    );
+                })}
+
+                {gameMatches.filter((m: any) => m.status === 'scheduled').length === 0 && (
+                    <div className="text-center py-12 text-slate-400 font-medium">
+                        No scheduled matches.
+                    </div>
+                )}
+            </div>
+
+            {/* Completed History (Mini) */}
+            <div>
+                <h3 className="font-bold text-slate-400 uppercase tracking-widest text-xs mb-4">Recent Results</h3>
+                <div className="space-y-2 opacity-60">
+                    {gameMatches.filter((m: any) => m.status === 'completed').slice(-5).reverse().map((match: any) => {
+                        const winner = teams.find((t: any) => t.id === match.winnerTeamId);
+                        return (
+                            <div key={match.id} className="flex justify-between p-3 bg-slate-50 rounded-xl text-sm">
+                                <span>{match.stage}</span>
+                                <span className="font-bold text-green-600">{winner?.name || 'Unknown'} Won</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // ============================================
 // TEAM MANAGEMENT SECTION
@@ -422,6 +483,10 @@ const AdminDashboard = () => {
     const [newPlayerName, setNewPlayerName] = useState('');
     const [newPlayerGender, setNewPlayerGender] = useState<'M' | 'F'>('M');
 
+    // Game Selection
+    const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
+    const { knockoutMatches, resolveKnockoutMatch, setActiveGame } = useTournament();
+
     if (!isAdmin) {
         return <LoginScreen pin={pin} setPin={setPin} login={login} />;
     }
@@ -442,6 +507,12 @@ const AdminDashboard = () => {
                         <Link to="/" className="p-2.5 -ml-2 rounded-xl text-cricket-textMuted hover:text-cricket-primary hover:bg-cricket-primary/5 transition-colors">
                             <Home size={20} />
                         </Link>
+                        {/* Back to Games */}
+                        {selectedGame && (
+                            <button onClick={() => { setSelectedGame(null); setActiveGame('cricket'); }} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold uppercase hover:bg-slate-200">
+                                <ChevronRight size={14} className="rotate-180" /> Change Sport
+                            </button>
+                        )}
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-cricket-primary/10">
                                 <Shield size={18} className="text-cricket-primary" />
@@ -480,8 +551,18 @@ const AdminDashboard = () => {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3 }}
                     >
-                        {activeTab === 'match' && (
-                            <MatchControlSection navigate={navigate} resetTournament={resetTournament} />
+                        {activeTab === 'match' && selectedGame === 'cricket' && (
+                            <CricketMatchControl navigate={navigate} resetTournament={resetTournament} />
+                        )}
+
+                        {activeTab === 'match' && selectedGame && selectedGame !== 'cricket' && (
+                            <KnockoutMatchControl
+                                navigate={navigate}
+                                knockoutMatches={knockoutMatches}
+                                resolveMatch={resolveKnockoutMatch}
+                                teams={teams}
+                                gameType={selectedGame}
+                            />
                         )}
 
                         {activeTab === 'teams' && (
@@ -509,7 +590,16 @@ const AdminDashboard = () => {
                     </motion.div>
                 </AnimatePresence>
             </div>
-        </div>
+
+            {/* Game Selector Modal / Overlay */}
+            {
+                !selectedGame && (
+                    <div className="fixed inset-0 z-50 bg-slate-50 flex items-center justify-center p-4">
+                        <GameSelector onSelect={(game) => { setSelectedGame(game); setActiveGame(game); }} />
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

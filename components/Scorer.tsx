@@ -164,7 +164,7 @@ const BallHistoryItem = ({ ball, idx }: { ball: any, idx: number }) => {
 // MAIN SCORER COMPONENT
 // ============================================
 const Scorer = () => {
-    const { activeMatch, teams, recordBall, undoLastBall, endMatch, setNextBowler, isAdmin } = useTournament();
+    const { activeMatch, teams, recordBall, undoLastBall, endMatch, abandonMatch, setNextBowler, isAdmin } = useTournament();
     const navigate = useNavigate();
 
     // Modal States
@@ -298,14 +298,30 @@ const Scorer = () => {
                     </div>
 
                     {isAdmin && (
-                        <motion.button
-                            onClick={() => endMatch(activeMatch.id)}
-                            className="px-4 py-2 rounded-xl bg-cricket-wicket/10 text-cricket-wicket text-xs font-bold uppercase tracking-wider border border-cricket-wicket/30 hover:bg-cricket-wicket/20 transition-colors"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            End Match
-                        </motion.button>
+                        <div className="flex gap-2">
+                            <motion.button
+                                onClick={() => {
+                                    if (confirm("Are you sure you want to ABANDON this match? It will be marked as 'No Result' and 5 points will be awarded to both teams.")) {
+                                        abandonMatch(activeMatch.id);
+                                        navigate('/');
+                                    }
+                                }}
+                                className="px-3 py-2 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider border border-slate-200 hover:bg-slate-200 hover:text-slate-700 transition-colors flex items-center gap-2"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <AlertTriangle size={14} />
+                                <span className="hidden sm:inline">No Result</span>
+                            </motion.button>
+                            <motion.button
+                                onClick={() => endMatch(activeMatch.id)}
+                                className="px-4 py-2 rounded-xl bg-cricket-wicket/10 text-cricket-wicket text-xs font-bold uppercase tracking-wider border border-cricket-wicket/30 hover:bg-cricket-wicket/20 transition-colors"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                End Match
+                            </motion.button>
+                        </div>
                     )}
                 </div>
 

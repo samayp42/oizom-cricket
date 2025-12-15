@@ -6,6 +6,7 @@ import MatchSetup from './components/MatchSetup';
 import Scorer from './components/Scorer';
 import AdminDashboard from './components/AdminDashboard';
 import MatchCenter from './components/MatchCenter';
+import KnockoutMatchSetup from './components/KnockoutMatchSetup';
 import { Shield, Home, Tv, Zap } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -159,6 +160,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/setup" element={<MatchSetup />} />
+            <Route path="/knockout-setup" element={<KnockoutMatchSetup />} />
             <Route path="/scorer" element={<Scorer />} />
             <Route path="/live" element={<MatchCenter />} />
           </Routes>

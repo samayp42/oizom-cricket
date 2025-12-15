@@ -32,6 +32,10 @@ export interface Team {
     totalRunsConceded: number;
     totalOversBowled: number;
   };
+  badmintonStats?: KnockoutStats;
+  tableTennisStats?: KnockoutStats;
+  chessStats?: KnockoutStats;
+  carromStats?: KnockoutStats;
 }
 
 export type ExtraType = 'wide' | 'no-ball' | 'bye' | 'leg-bye' | null;
@@ -86,7 +90,7 @@ export interface InningsState {
   fow: FOW[];
 }
 
-export type MatchStatus = 'scheduled' | 'toss' | 'live' | 'innings_break' | 'completed';
+export type MatchStatus = 'scheduled' | 'toss' | 'live' | 'innings_break' | 'completed' | 'abandoned';
 export type PlayStatus = 'active' | 'waiting_for_bowler';
 
 export interface Match {
@@ -112,4 +116,42 @@ export interface Match {
 export interface TournamentData {
   teams: Team[];
   matches: Match[];
+  knockoutMatches?: KnockoutMatch[];
+}
+
+// ==========================================
+// KNOCKOUT GAME TYPES
+// ==========================================
+
+export type GameType = 'cricket' | 'badminton' | 'table_tennis' | 'chess' | 'carrom';
+
+export interface KnockoutStats {
+  played: number;
+  won: number;
+  lost: number;
+  points: number;
+}
+
+export type KnockoutMatchStage = 'round_1' | 'semi_final' | 'final';
+export type KnockoutMatchType = 'singles' | 'doubles';
+
+export interface KnockoutMatch {
+  id: string;
+  gameType: GameType;
+  date: string;
+  stage: KnockoutMatchStage;
+  matchType: KnockoutMatchType;
+
+  // Teams
+  teamAId: string;
+  teamBId: string;
+
+  // Players (Array to support doubles)
+  teamAPlayerIds: string[];
+  teamBPlayerIds: string[];
+
+  // Result
+  winnerTeamId?: string;
+  status: 'scheduled' | 'completed';
+  pointsAwarded: number; // 6, 8, or 10
 }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from 'react';
-import { TournamentData, Match, Team, InningsState, BallEvent, Player } from '../types';
-import { INITIAL_TEAMS } from '../constants';
+import { TournamentData, Match, Team, InningsState, BallEvent, Player, KnockoutMatch, KnockoutMatchStage, KnockoutMatchType, GameType, KnockoutStats } from '../types';
+import { INITIAL_TEAMS, KNOCKOUT_POINTS } from '../constants';
 import { calculateNRR, addOvers } from '../utils/nrr';
 import { generateCommentary } from '../utils/analytics';
 import { supabase, isSupabaseEnabled } from '../utils/supabaseClient';
@@ -26,14 +26,22 @@ interface TournamentContextType {
   recordBall: (matchId: string, ball: BallEvent, nextBatterId?: string) => void;
   undoLastBall: (matchId: string) => void;
   endMatch: (matchId: string) => void;
+  abandonMatch: (matchId: string) => void;
   resetTournament: () => void;
   generateKnockouts: () => void;
+  // Knockout Games
+  activeGame: GameType;
+  setActiveGame: (game: GameType) => void;
+  knockoutMatches: KnockoutMatch[];
+  createKnockoutMatch: (gameType: GameType, teamAId: string, teamBId: string, stage: KnockoutMatchStage, matchType: KnockoutMatchType, teamAPlayerIds: string[], teamBPlayerIds: string[]) => void;
+  resolveKnockoutMatch: (matchId: string, winnerTeamId: string) => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('oizom_admin') === 'true');
+  const [activeGame, setActiveGame] = useState<GameType>('cricket');
   const [isSyncing, setIsSyncing] = useState(false);
 
   const [data, setData] = useState<TournamentData>(() => {
@@ -88,9 +96,29 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
               resultMessage: m.result_message
             }));
 
+            // 3. Fetch Knockout Matches
+            const { data: kMatchesData } = await supabase!.from('knockout_matches').select('*');
+            const formattedKMatches = kMatchesData ? kMatchesData.map(m => ({
+              id: m.id, gameType: m.game_type as GameType,
+              date: m.date, stage: m.stage, matchType: m.match_type,
+              teamAId: m.team_a_id, teamBId: m.team_b_id,
+              teamAPlayerIds: m.team_a_player_ids, teamBPlayerIds: m.team_b_player_ids,
+              winnerTeamId: m.winner_team_id, status: m.status, pointsAwarded: m.points_awarded
+            })) : [];
+
+            // Format Teams with Knockout Stats
+            const finalTeams = formattedTeams.map(t => ({
+              ...t,
+              badmintonStats: t.badminton_stats || { played: 0, won: 0, lost: 0, points: 0 },
+              tableTennisStats: t.table_tennis_stats || { played: 0, won: 0, lost: 0, points: 0 },
+              chessStats: t.chess_stats || { played: 0, won: 0, lost: 0, points: 0 },
+              carromStats: t.carrom_stats || { played: 0, won: 0, lost: 0, points: 0 }
+            }));
+
             setData({
-              teams: formattedTeams.length > 0 ? formattedTeams : INITIAL_TEAMS,
-              matches: formattedMatches
+              teams: finalTeams.length > 0 ? finalTeams : INITIAL_TEAMS,
+              matches: formattedMatches,
+              knockoutMatches: formattedKMatches
             });
           }
         }
@@ -657,19 +685,52 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     if (!team1 || !team2) return;
     team1.stats.played++;
     team2.stats.played++;
+    const isGroupStage = match.groupStage;
+    const isSemiFinal = match.knockoutStage === 'SF1' || match.knockoutStage === 'SF2';
+    const isFinal = match.knockoutStage === 'FINAL';
+
     if (match.winnerId === t1) {
       team1.stats.won++;
-      team1.stats.points += 2;
       team2.stats.lost++;
+
+      if (isGroupStage) {
+        team1.stats.points += 10;
+        // Loser in group stage gets 0
+      } else if (isSemiFinal) {
+        team1.stats.points += 8;
+        team2.stats.points += 3; // Loser gets 3 in SF
+      } else if (isFinal) {
+        team1.stats.points += 10;
+        team2.stats.points += 6; // Runner up gets 6
+      }
     } else if (match.winnerId === t2) {
       team2.stats.won++;
-      team2.stats.points += 2;
       team1.stats.lost++;
+
+      if (isGroupStage) {
+        team2.stats.points += 10;
+      } else if (isSemiFinal) {
+        team2.stats.points += 8;
+        team1.stats.points += 3;
+      } else if (isFinal) {
+        team2.stats.points += 10;
+        team1.stats.points += 6;
+      }
     } else {
+      // Tie / No Result
       team1.stats.tie++;
-      team1.stats.points++;
       team2.stats.tie++;
-      team2.stats.points++;
+
+      if (isGroupStage) {
+        team1.stats.points += 5;
+        team2.stats.points += 5;
+      } else {
+        // Tie in Knockouts (Usually Super Over, but if simply ended as Tie)
+        // User said "if no result then both team gets 5 points" generally for Cricket
+        // Assuming this applies to Group Stage mainly, but let's apply 5 for now if tie happens elsewhere or default
+        team1.stats.points += 5;
+        team2.stats.points += 5;
+      }
     }
     team1.stats.totalRunsScored += match.innings1!.totalRuns;
     team2.stats.totalRunsConceded += match.innings1!.totalRuns;
@@ -763,6 +824,67 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     }
   };
 
+  const abandonMatch = (matchId: string) => {
+    const matchIndex = data.matches.findIndex(m => m.id === matchId);
+    if (matchIndex === -1) return;
+    let match = JSON.parse(JSON.stringify(data.matches[matchIndex])) as Match;
+
+    // Set status to abandoned
+    match.status = 'abandoned';
+    match.resultMessage = "Match Abandoned - No Result";
+    match.winnerId = undefined;
+
+    // Distribute 5 points to each team (Cricket Group Stage Logic mainly)
+    const t1 = match.teamAId;
+    const t2 = match.teamBId;
+    const team1 = data.teams.find(t => t.id === t1);
+    const team2 = data.teams.find(t => t.id === t2);
+
+    let updatedTeams = [...data.teams];
+
+    if (team1 && team2) {
+      // We only add points, doesn't count as tied match for NRR purpose usually but stats structure has Tie.
+      // User said "if no result then both team gets 5 points".
+      // Let's increment 'tie' just to show it was a no-result/tie game in stats columns if desirable,
+      // OR we can just add points. Given the Points Table logic uses stats.won/lost/tie/points,
+      // and 'tie' usually gives 1 point in old logic, but here it gives 5.
+      // Ideally we should track 'no_result' separately but 'tie' bucket works if we are consistent.
+
+      team1.stats.tie++;
+      team2.stats.tie++;
+
+      team1.stats.points += 5;
+      team2.stats.points += 5;
+
+      updatedTeams = data.teams.map(t => {
+        if (t.id === t1) return team1;
+        if (t.id === t2) return team2;
+        return t;
+      });
+    }
+
+    const updatedMatches = [...data.matches];
+    updatedMatches[matchIndex] = match;
+
+    setData({ ...data, matches: updatedMatches, teams: updatedTeams });
+    setActiveMatch(null);
+
+    if (isSupabaseEnabled) {
+      supabase!.from('matches').update({
+        status: 'abandoned',
+        result_message: match.resultMessage,
+        winner_id: null
+      }).eq('id', matchId).then();
+
+      if (team1 && team2) {
+        supabase!.from('teams').upsert([
+          { id: team1.id, name: team1.name, group: team1.group, stats: team1.stats },
+          { id: team2.id, name: team2.name, group: team2.group, stats: team2.stats }
+        ]).then();
+      }
+    }
+  };
+
   const resetTournament = async () => {
     if (!confirm('Are you sure you want to reset the entire tournament? This will delete all teams, players, and matches. This action cannot be undone.')) {
       return;
@@ -785,9 +907,27 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   const generateKnockouts = () => {
+    // Sort groups
     const groupA = data.teams.filter(t => t.group === 'A').sort((a, b) => b.stats.points - a.stats.points || b.stats.nrr - a.stats.nrr);
     const groupB = data.teams.filter(t => t.group === 'B').sort((a, b) => b.stats.points - a.stats.points || b.stats.nrr - a.stats.nrr);
-    if (groupA.length < 2 || groupB.length < 2) return;
+
+    if (groupA.length < 2 || groupB.length < 2) {
+      alert("Not enough teams in groups to generate knockouts.");
+      return;
+    }
+
+    // Apply Qualification Bonus (5 pts)
+    const qualifiedTeams = [groupA[0], groupA[1], groupB[0], groupB[1]];
+    const updatedTeams = data.teams.map(t => {
+      if (qualifiedTeams.find(qt => qt.id === t.id)) {
+        const newStats = { ...t.stats, points: t.stats.points + 5 };
+        return { ...t, stats: newStats };
+      }
+      return t;
+    });
+
+    // Update teams with bonus points in state first (so SF generation sees updated state if needed, though usually SF matchups use IDs)
+    // We update state at end, but better to prepare match generation with IDs.
 
     const sf1: Match = {
       id: 'sf1', date: new Date().toISOString(),
@@ -799,9 +939,15 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       teamAId: groupB[0].id, teamBId: groupA[1].id,
       groupStage: false, knockoutStage: 'SF2', status: 'scheduled', playStatus: 'active', totalOvers: 10,
     };
-    setData({ ...data, matches: [...data.matches, sf1, sf2] });
+
+    setData({ ...data, teams: updatedTeams, matches: [...data.matches, sf1, sf2] });
 
     if (isSupabaseEnabled) {
+      // Update Bonus Points in DB
+      qualifiedTeams.forEach(t => {
+        supabase!.from('teams').update({ stats: { ...t.stats, points: t.stats.points + 5 } }).eq('id', t.id).then();
+      });
+
       supabase!.from('matches').insert([
         { id: sf1.id, team_a_id: sf1.teamAId, team_b_id: sf1.teamBId, total_overs: 10, knockout_stage: 'SF1', status: 'scheduled', group_stage: false },
         { id: sf2.id, team_a_id: sf2.teamAId, team_b_id: sf2.teamBId, total_overs: 10, knockout_stage: 'SF2', status: 'scheduled', group_stage: false }
@@ -811,12 +957,128 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     }
   };
 
+  const createKnockoutMatch = (gameType: GameType, teamAId: string, teamBId: string, stage: KnockoutMatchStage, matchType: KnockoutMatchType, teamAPlayerIds: string[], teamBPlayerIds: string[]) => {
+    const newMatch: KnockoutMatch = {
+      id: Math.random().toString(36).substr(2, 9),
+      gameType,
+      date: new Date().toISOString(),
+      stage,
+      matchType,
+      teamAId,
+      teamBId,
+      teamAPlayerIds,
+      teamBPlayerIds,
+      status: 'scheduled',
+      pointsAwarded: KNOCKOUT_POINTS[stage]
+    };
+
+    const newData = { ...data, knockoutMatches: [...(data.knockoutMatches || []), newMatch] };
+    setData(newData);
+
+    if (isSupabaseEnabled) {
+      supabase!.from('knockout_matches').insert({
+        id: newMatch.id,
+        game_type: newMatch.gameType,
+        stage: newMatch.stage,
+        match_type: newMatch.matchType,
+        team_a_id: newMatch.teamAId,
+        team_b_id: newMatch.teamBId,
+        team_a_player_ids: newMatch.teamAPlayerIds,
+        team_b_player_ids: newMatch.teamBPlayerIds,
+        points_awarded: newMatch.pointsAwarded,
+        status: newMatch.status
+      }).then(({ error }) => { if (error) console.error('Supabase error:', error); });
+    }
+  };
+
+  const resolveKnockoutMatch = (matchId: string, winnerTeamId: string) => {
+    const matches = data.knockoutMatches || [];
+    const matchIndex = matches.findIndex(m => m.id === matchId);
+    if (matchIndex === -1) return;
+
+    const match = { ...matches[matchIndex] };
+    match.winnerTeamId = winnerTeamId;
+    match.status = 'completed';
+
+    const winnerTeam = data.teams.find(t => t.id === winnerTeamId);
+    const loserTeamId = match.teamAId === winnerTeamId ? match.teamBId : match.teamAId;
+    const loserTeam = data.teams.find(t => t.id === loserTeamId);
+
+    if (winnerTeam && loserTeam) {
+      // Helper to update stats based on game type
+      const updateStats = (team: Team, isWinner: boolean) => {
+        let stats: KnockoutStats | undefined;
+        if (match.gameType === 'badminton') stats = team.badmintonStats;
+        else if (match.gameType === 'table_tennis') stats = team.tableTennisStats;
+        else if (match.gameType === 'chess') stats = team.chessStats;
+        else if (match.gameType === 'carrom') stats = team.carromStats;
+
+        if (!stats) stats = { played: 0, won: 0, lost: 0, points: 0 };
+
+        stats.played++;
+        if (isWinner) {
+          stats.won++;
+          stats.points += match.pointsAwarded;
+        } else {
+          stats.lost++;
+        }
+
+        // Assign back
+        if (match.gameType === 'badminton') team.badmintonStats = stats;
+        else if (match.gameType === 'table_tennis') team.tableTennisStats = stats;
+        else if (match.gameType === 'chess') team.chessStats = stats;
+        else if (match.gameType === 'carrom') team.carromStats = stats;
+      };
+
+      updateStats(winnerTeam, true);
+      updateStats(loserTeam, false);
+    }
+
+    const updatedMatches = [...matches];
+    updatedMatches[matchIndex] = match;
+
+    const updatedTeams = data.teams.map(t => {
+      if (t.id === winnerTeamId) return winnerTeam!;
+      if (t.id === loserTeamId) return loserTeam!;
+      return t;
+    });
+
+    setData({ ...data, teams: updatedTeams, knockoutMatches: updatedMatches });
+
+    if (isSupabaseEnabled) {
+      supabase!.from('knockout_matches').update({
+        winner_team_id: winnerTeamId,
+        status: 'completed'
+      }).eq('id', matchId).then();
+
+      // Update specific stats column in Supabase
+      if (winnerTeam) {
+        let updateObj: any = {};
+        if (match.gameType === 'badminton') updateObj = { badminton_stats: winnerTeam.badmintonStats };
+        if (match.gameType === 'table_tennis') updateObj = { table_tennis_stats: winnerTeam.tableTennisStats };
+        if (match.gameType === 'chess') updateObj = { chess_stats: winnerTeam.chessStats };
+        if (match.gameType === 'carrom') updateObj = { carrom_stats: winnerTeam.carromStats };
+        supabase!.from('teams').update(updateObj).eq('id', winnerTeamId).then();
+      }
+      if (loserTeam) {
+        let updateObj: any = {};
+        if (match.gameType === 'badminton') updateObj = { badminton_stats: loserTeam.badmintonStats };
+        if (match.gameType === 'table_tennis') updateObj = { table_tennis_stats: loserTeam.tableTennisStats };
+        if (match.gameType === 'chess') updateObj = { chess_stats: loserTeam.chessStats };
+        if (match.gameType === 'carrom') updateObj = { carrom_stats: loserTeam.carromStats };
+        supabase!.from('teams').update(updateObj).eq('id', loserTeamId).then();
+      }
+    }
+  };
+
   return (
     <TournamentContext.Provider value={{
       isAdmin, login, logout,
       teams: data.teams, matches: data.matches, activeMatch,
       addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, createMatch, updateMatchToss, startInnings, setNextBowler,
-      recordBall, undoLastBall, endMatch, resetTournament, generateKnockouts
+      recordBall, undoLastBall, endMatch, abandonMatch, resetTournament, generateKnockouts,
+      // Knockout
+      activeGame, setActiveGame, knockoutMatches: data.knockoutMatches || [], createKnockoutMatch, resolveKnockoutMatch
     }}>
       {children}
     </TournamentContext.Provider>
