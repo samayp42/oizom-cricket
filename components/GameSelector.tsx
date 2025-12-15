@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Circle, Activity, Disc, Grip, Dna } from 'lucide-react';
+import { Circle, Activity, Disc, Grip, Dna, Home } from 'lucide-react';
 import { GameType } from '../types';
+import { Link } from 'react-router-dom';
 
 interface GameCardProps {
     title: string;
@@ -39,7 +40,7 @@ const GameCard = ({ title, icon, color, onClick, description }: GameCardProps) =
 
 export const GameSelector = ({ onSelect }: { onSelect: (game: GameType) => void }) => {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-5xl mx-auto py-12">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-5xl mx-auto py-12 relative">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -51,7 +52,7 @@ export const GameSelector = ({ onSelect }: { onSelect: (game: GameType) => void 
                 <p className="text-slate-500 text-lg font-medium">Choose a championship to manage</p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full px-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full px-4 mb-12">
                 <GameCard
                     title="Cricket"
                     description="Manage T20 matches, scoring, and teams"
@@ -92,6 +93,17 @@ export const GameSelector = ({ onSelect }: { onSelect: (game: GameType) => void 
                     onClick={() => onSelect('carrom')}
                 />
             </div>
+
+            <Link to="/">
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white border border-slate-200 text-slate-500 font-bold uppercase tracking-wider hover:text-emerald-600 hover:border-emerald-200 transition-colors shadow-sm"
+                >
+                    <Home size={18} />
+                    Back to Dashboard
+                </motion.button>
+            </Link>
         </div>
     );
 };

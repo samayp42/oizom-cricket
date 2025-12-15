@@ -504,8 +504,9 @@ const AdminDashboard = () => {
             <nav className="bg-white/90 backdrop-blur-md border-b border-cricket-border sticky top-0 z-50">
                 <div className="container mx-auto px-4 h-16 flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <Link to="/" className="p-2.5 -ml-2 rounded-xl text-cricket-textMuted hover:text-cricket-primary hover:bg-cricket-primary/5 transition-colors">
+                        <Link to="/" className="flex items-center gap-2 p-2.5 -ml-2 rounded-xl text-cricket-textMuted hover:text-cricket-primary hover:bg-cricket-primary/5 transition-colors group">
                             <Home size={20} />
+                            <span className="font-bold text-xs uppercase tracking-wider group-hover:text-cricket-primary transition-colors">Dashboard</span>
                         </Link>
                         {/* Back to Games */}
                         {selectedGame && (
