@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, X, Zap, Target, AlertTriangle, Activity } from 'lucide-react';
+import { ArrowLeft, X, Zap, Target, AlertTriangle, Activity, Radio, BarChart2 } from 'lucide-react';
 import { formatOvers } from '../utils/nrr';
-import { WicketType } from '../types';
+import { WicketType, Player } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================
@@ -109,6 +109,92 @@ const BowlerBar = ({ bowler, formatOvers }: { bowler: any, formatOvers: (o: numb
 );
 
 // ============================================
+// COMPACT BOWLING SCORECARD
+// ============================================
+const BowlingScorecard = ({ bowlers, currentBowlerId }: { bowlers: Player[], currentBowlerId: string }) => {
+    const getEcon = (runs: number, overs: number) => overs > 0 ? (runs / overs).toFixed(2) : '0.00';
+
+    // Filter and sort bowlers who have bowled
+    const activeBowlers = bowlers
+        .filter(p => p.stats.oversBowled > 0 || p.stats.runsConceded > 0 || p.id === currentBowlerId)
+        .sort((a, b) => b.stats.wickets - a.stats.wickets || a.stats.runsConceded - b.stats.runsConceded);
+
+    if (activeBowlers.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-cricket-textMuted">
+                <Activity size={40} className="mb-4 opacity-30" />
+                <p className="text-sm">No bowling figures yet</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-2">
+            {/* Header */}
+            <div className="flex items-center px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-cricket-textMuted border-b border-cricket-border">
+                <div className="flex-1">Bowler</div>
+                <div className="w-12 text-center">O</div>
+                <div className="w-12 text-center">R</div>
+                <div className="w-12 text-center">W</div>
+                <div className="w-14 text-center">Econ</div>
+            </div>
+
+            {/* Bowler Rows */}
+            {activeBowlers.map((bowler, idx) => {
+                const isCurrent = bowler.id === currentBowlerId;
+                const econ = getEcon(bowler.stats.runsConceded, bowler.stats.oversBowled);
+
+                return (
+                    <motion.div
+                        key={bowler.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className={`flex items-center px-4 py-3 rounded-xl transition-all ${isCurrent
+                            ? 'bg-cricket-secondary/10 border border-cricket-secondary/30'
+                            : 'bg-white border border-cricket-border hover:border-cricket-secondary/30'
+                            }`}
+                    >
+                        <div className="flex-1 flex items-center gap-2">
+                            {isCurrent && (
+                                <motion.div
+                                    className="w-2 h-2 rounded-full bg-cricket-secondary"
+                                    animate={{ scale: [1, 1.3, 1] }}
+                                    transition={{ duration: 1, repeat: Infinity }}
+                                />
+                            )}
+                            <span className={`font-semibold text-sm ${isCurrent ? 'text-cricket-secondary' : 'text-cricket-textPrimary'}`}>
+                                {bowler.name}
+                                {isCurrent && <span className="text-cricket-secondary"> *</span>}
+                            </span>
+                        </div>
+                        <div className="w-12 text-center font-mono text-sm text-cricket-textSecondary">
+                            {formatOvers(bowler.stats.oversBowled)}
+                        </div>
+                        <div className="w-12 text-center font-mono text-sm text-cricket-textSecondary">
+                            {bowler.stats.runsConceded}
+                        </div>
+                        <div className="w-12 text-center font-mono text-sm font-bold text-cricket-secondary">
+                            {bowler.stats.wickets}
+                        </div>
+                        <div className="w-14 text-center">
+                            <span className={`font-mono text-xs px-2 py-1 rounded-md ${parseFloat(econ) < 6
+                                ? 'bg-cricket-primary/10 text-cricket-primary'
+                                : parseFloat(econ) > 10
+                                    ? 'bg-cricket-wicket/10 text-cricket-wicket'
+                                    : 'text-cricket-textMuted'
+                                }`}>
+                                {econ}
+                            </span>
+                        </div>
+                    </motion.div>
+                );
+            })}
+        </div>
+    );
+};
+
+// ============================================
 // BALL HISTORY ITEM
 // ============================================
 const BallHistoryItem = ({ ball, idx }: { ball: any, idx: number }) => {
@@ -172,6 +258,9 @@ const Scorer = () => {
     const [wicketType, setWicketType] = useState<WicketType | null>(null);
     const [whoOut, setWhoOut] = useState('');
     const [newBatter, setNewBatter] = useState('');
+
+    // View Toggle State
+    const [activeView, setActiveView] = useState<'commentary' | 'bowling'>('commentary');
 
     useEffect(() => {
         if (!activeMatch) navigate('/');
@@ -390,19 +479,69 @@ const Scorer = () => {
                 </AnimatePresence>
             </motion.div>
 
-            {/* === BALL HISTORY === */}
-            <div className="flex-1 overflow-y-auto bg-cricket-bgAlt relative">
-                <div className="absolute inset-0 p-6 space-y-1">
-                    {currentInnings.history.slice().reverse().map((ball, idx) => (
-                        <BallHistoryItem key={ball.id} ball={ball} idx={idx} />
-                    ))}
+            {/* === VIEW TOGGLE & CONTENT === */}
+            <div className="flex-1 overflow-hidden flex flex-col bg-cricket-bgAlt">
+                {/* Tab Toggle */}
+                <div className="flex-none flex border-b border-cricket-border bg-white">
+                    <button
+                        onClick={() => setActiveView('commentary')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeView === 'commentary'
+                                ? 'text-cricket-primary border-b-2 border-cricket-primary bg-cricket-primary/5'
+                                : 'text-cricket-textMuted hover:text-cricket-textSecondary'
+                            }`}
+                    >
+                        <Radio size={14} />
+                        Commentary
+                    </button>
+                    <button
+                        onClick={() => setActiveView('bowling')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeView === 'bowling'
+                                ? 'text-cricket-secondary border-b-2 border-cricket-secondary bg-cricket-secondary/5'
+                                : 'text-cricket-textMuted hover:text-cricket-textSecondary'
+                            }`}
+                    >
+                        <BarChart2 size={14} />
+                        Bowling
+                    </button>
+                </div>
 
-                    {currentInnings.history.length === 0 && (
-                        <div className="text-center py-20 text-cricket-textMuted">
-                            <Target size={56} className="mx-auto mb-6 opacity-30" />
-                            <p className="font-display text-xl uppercase tracking-widest">Waiting for first ball...</p>
-                        </div>
-                    )}
+                {/* Content Area */}
+                <div className="flex-1 overflow-y-auto relative">
+                    <AnimatePresence mode="wait">
+                        {activeView === 'commentary' ? (
+                            <motion.div
+                                key="commentary"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="absolute inset-0 p-6 space-y-1 overflow-y-auto"
+                            >
+                                {currentInnings.history.slice().reverse().map((ball, idx) => (
+                                    <BallHistoryItem key={ball.id} ball={ball} idx={idx} />
+                                ))}
+
+                                {currentInnings.history.length === 0 && (
+                                    <div className="text-center py-20 text-cricket-textMuted">
+                                        <Target size={56} className="mx-auto mb-6 opacity-30" />
+                                        <p className="font-display text-xl uppercase tracking-widest">Waiting for first ball...</p>
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="bowling"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="absolute inset-0 p-4 overflow-y-auto"
+                            >
+                                <BowlingScorecard
+                                    bowlers={bowlingTeam?.players || []}
+                                    currentBowlerId={currentInnings.currentBowlerId}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 

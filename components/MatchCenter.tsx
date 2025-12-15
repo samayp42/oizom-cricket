@@ -402,6 +402,80 @@ const MatchCenter = () => {
                                                             </tbody>
                                                         </table>
                                                     </div>
+
+                                                    {/* Extras & Total */}
+                                                    <div className="px-4 md:px-6 py-4 border-t border-cricket-border bg-cricket-bgAlt/50">
+                                                        {/* Extras Row */}
+                                                        {(() => {
+                                                            const wides = currentInnings.history.filter((b: any) => b.extraType === 'wide').reduce((sum: number, b: any) => sum + b.extras, 0);
+                                                            const noBalls = currentInnings.history.filter((b: any) => b.extraType === 'no-ball').reduce((sum: number, b: any) => sum + b.extras, 0);
+                                                            const totalExtras = wides + noBalls;
+                                                            return (
+                                                                <div className="flex justify-between items-center py-2">
+                                                                    <span className="font-semibold text-cricket-textSecondary">Extras</span>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="font-bold text-cricket-textPrimary">{totalExtras}</span>
+                                                                        <span className="text-sm text-cricket-textMuted">
+                                                                            (WD {wides}, NB {noBalls})
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
+
+                                                        {/* Total Row */}
+                                                        <div className="flex justify-between items-center py-2 border-t border-cricket-border mt-2 pt-3">
+                                                            <span className="font-bold text-cricket-textPrimary text-lg">Total runs</span>
+                                                            <div className="text-right">
+                                                                <span className="font-display font-bold text-xl text-cricket-primary">
+                                                                    {currentInnings.totalRuns}
+                                                                </span>
+                                                                <span className="text-cricket-textMuted ml-2">
+                                                                    ({currentInnings.wickets} wkts, {formatOvers(currentInnings.overs)} ov)
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Yet to Bat */}
+                                                    {(() => {
+                                                        const yetToBat = battingTeam?.players.filter(p => !currentInnings.battingOrder.includes(p.id)) || [];
+                                                        if (yetToBat.length === 0) return null;
+                                                        return (
+                                                            <div className="px-4 md:px-6 py-4 border-t border-cricket-border">
+                                                                <div className="text-xs font-bold uppercase tracking-wider text-cricket-textMuted mb-2">Yet to bat</div>
+                                                                <div className="text-sm text-cricket-textSecondary">
+                                                                    {yetToBat.map((p, i) => (
+                                                                        <span key={p.id}>
+                                                                            {p.name}{p.role === 'captain' ? ' (C)' : p.role === 'vice-captain' ? ' (VC)' : ''}
+                                                                            {i < yetToBat.length - 1 ? ' · ' : ''}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* Fall of Wickets */}
+                                                    {currentInnings.fow && currentInnings.fow.length > 0 && (
+                                                        <div className="px-4 md:px-6 py-4 border-t border-cricket-border bg-cricket-bgAlt/30">
+                                                            <div className="text-xs font-bold uppercase tracking-wider text-cricket-textMuted mb-2">Fall of wickets</div>
+                                                            <div className="text-sm text-cricket-textSecondary flex flex-wrap gap-x-4 gap-y-1">
+                                                                {currentInnings.fow.map((f: any, i: number) => {
+                                                                    const player = battingTeam?.players.find(p => p.id === f.batterId);
+                                                                    return (
+                                                                        <span key={i} className="whitespace-nowrap">
+                                                                            <span className="font-bold text-cricket-wicket">{f.score}/{f.wicketCount}</span>
+                                                                            <span className="text-cricket-textMuted ml-1">
+                                                                                ({player?.name?.split(' ')[0] || 'Unknown'}, {formatOvers(f.over)} ov)
+                                                                            </span>
+                                                                            {i < currentInnings.fow.length - 1 && <span className="text-cricket-textMuted"> · </span>}
+                                                                        </span>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Bowling Card */}
@@ -427,18 +501,29 @@ const MatchCenter = () => {
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {bowlingTeam?.players.filter(p => p.stats.oversBowled > 0 || p.id === currentInnings.currentBowlerId).map(p => (
-                                                                    <BowlerRow
-                                                                        key={p.id}
-                                                                        player={p}
-                                                                        isCurrent={currentInnings.currentBowlerId === p.id}
-                                                                        getEcon={getEcon}
-                                                                        formatOvers={formatOvers}
-                                                                    />
-                                                                ))}
+                                                                {bowlingTeam?.players
+                                                                    .filter(p => p.stats.oversBowled > 0 || p.stats.runsConceded > 0 || p.id === currentInnings.currentBowlerId)
+                                                                    .sort((a, b) => b.stats.wickets - a.stats.wickets || a.stats.runsConceded - b.stats.runsConceded)
+                                                                    .map(p => (
+                                                                        <BowlerRow
+                                                                            key={p.id}
+                                                                            player={p}
+                                                                            isCurrent={currentInnings.currentBowlerId === p.id}
+                                                                            getEcon={getEcon}
+                                                                            formatOvers={formatOvers}
+                                                                        />
+                                                                    ))}
                                                             </tbody>
                                                         </table>
                                                     </div>
+
+                                                    {/* No bowlers yet message */}
+                                                    {bowlingTeam?.players.filter(p => p.stats.oversBowled > 0 || p.id === currentInnings.currentBowlerId).length === 0 && (
+                                                        <div className="px-6 py-8 text-center text-cricket-textMuted">
+                                                            <Activity size={32} className="mx-auto mb-3 opacity-30" />
+                                                            <p className="text-sm">No bowling figures yet</p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
