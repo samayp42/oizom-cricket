@@ -561,42 +561,7 @@ const Dashboard = () => {
         {/* Overall Leaderboard */}
         <OverallLeaderboard teams={teams} />
 
-        {/* Live Match Section */}
-        {activeGame === 'cricket' && (
-          <div className="mb-12">
-            {activeMatch && activeMatch.status === 'live' ? (
-              <LiveMatchHero match={activeMatch} teams={teams} />
-            ) : (
-              <NoMatchPlaceholder />
-            )}
-          </div>
-        )}
 
-        {/* Badminton/Knockout Recent Matches (Instead of Live Hero for now) */}
-        {activeGame !== 'cricket' && (
-          <div className="mb-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {knockoutMatches.filter((m: any) => m.gameType === activeGame && m.status === 'scheduled').slice(0, 3).map(match => {
-              const teamA = teams.find(t => t.id === match.teamAId);
-              const teamB = teams.find(t => t.id === match.teamBId);
-              return (
-                <div key={match.id} className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 flex flex-col items-center justify-center text-center">
-                  <span className="text-xs font-bold uppercase tracking-widest text-blue-500 mb-4">{match.stage.replace('_', ' ')}</span>
-                  <div className="flex items-center gap-4 mb-4">
-                    <span className="font-bold text-slate-800">{teamA?.name}</span>
-                    <span className="text-slate-300 font-black">VS</span>
-                    <span className="font-bold text-slate-800">{teamB?.name}</span>
-                  </div>
-                  <span className="text-xs font-medium text-slate-400">Scheduled</span>
-                </div>
-              )
-            })}
-            {knockoutMatches.filter((m: any) => m.gameType === activeGame && m.status === 'scheduled').length === 0 && (
-              <div className="col-span-full bg-white p-12 rounded-3xl shadow-sm border border-slate-100 text-center text-slate-400">
-                No upcoming matches scheduled.
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Quick Stats */}
         <motion.div
