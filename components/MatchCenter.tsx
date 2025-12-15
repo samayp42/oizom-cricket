@@ -1,33 +1,70 @@
 import React, { useState } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { formatOvers } from '../utils/nrr';
-import { ArrowLeft, TrendingUp, Clock, Share2, Tv, Users, Activity, BarChart3, Radio, Flame, Circle, Dna, Grip, Disc } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Clock, Share2, Tv, Users, Activity, BarChart3, Radio, Flame, Circle, Dna, Grip, Disc, Zap, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import MatchAnalytics from './MatchAnalytics';
 
+// Sport-specific configurations
+const SPORT_CONFIG: Record<string, { gradient: string; lightBg: string; emoji: string; borderActive: string }> = {
+    cricket: { gradient: 'from-emerald-500 to-lime-400', lightBg: 'bg-emerald-50', emoji: '🏏', borderActive: 'border-emerald-400' },
+    badminton: { gradient: 'from-blue-500 to-indigo-500', lightBg: 'bg-blue-50', emoji: '🏸', borderActive: 'border-blue-400' },
+    table_tennis: { gradient: 'from-orange-500 to-red-500', lightBg: 'bg-orange-50', emoji: '🏓', borderActive: 'border-orange-400' },
+    chess: { gradient: 'from-slate-600 to-zinc-500', lightBg: 'bg-slate-50', emoji: '♟️', borderActive: 'border-slate-400' },
+    carrom: { gradient: 'from-amber-500 to-yellow-400', lightBg: 'bg-amber-50', emoji: '🎯', borderActive: 'border-amber-400' },
+};
+
 // ============================================
-// GAME TAB BUTTON
+// GAME TAB BUTTON (ENHANCED)
 // ============================================
-const GameTabButton = ({ label, icon: Icon, active, onClick, color }: any) => (
-    <motion.button
-        onClick={onClick}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all min-w-[100px]
-            ${active
-                ? `bg-white border-${color}-500 shadow-lg`
-                : 'bg-white/50 border-transparent hover:bg-white hover:border-slate-200'
-            }`}
-    >
-        <div className={`mb-2 p-2 rounded-full ${active ? `bg-${color}-100 text-${color}-600` : 'bg-slate-100 text-slate-400'}`}>
-            <Icon size={24} />
-        </div>
-        <span className={`text-xs font-bold uppercase tracking-wider ${active ? 'text-slate-800' : 'text-slate-400'}`}>
-            {label}
-        </span>
-    </motion.button>
-);
+const GameTabButton = ({ label, icon: Icon, active, onClick, sportKey }: any) => {
+    const config = SPORT_CONFIG[sportKey] || SPORT_CONFIG.cricket;
+
+    return (
+        <motion.button
+            onClick={onClick}
+            whileHover={{ scale: 1.05, y: -4 }}
+            whileTap={{ scale: 0.95 }}
+            className={`relative flex flex-col items-center justify-center p-3 md:p-4 rounded-2xl border-2 transition-all min-w-[90px] md:min-w-[110px] overflow-hidden
+                ${active
+                    ? `bg-white ${config.borderActive} shadow-xl`
+                    : 'bg-white/60 border-transparent hover:bg-white hover:border-slate-200 hover:shadow-lg'
+                }`}
+        >
+            {/* Active gradient bar */}
+            {active && (
+                <motion.div
+                    layoutId="active-sport-bar"
+                    className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+            )}
+
+            {/* Icon with background */}
+            <div className={`mb-2 p-2.5 rounded-xl transition-all ${active ? config.lightBg : 'bg-slate-100'}`}>
+                <Icon size={22} className={active ? 'text-current' : 'text-slate-400'} style={{ color: active ? undefined : undefined }} />
+            </div>
+
+            {/* Emoji accent */}
+            <span className="text-lg md:text-xl mb-1">{config.emoji}</span>
+
+            {/* Label */}
+            <span className={`text-[10px] md:text-xs font-bold uppercase tracking-wider ${active ? 'text-slate-800' : 'text-slate-400'}`}>
+                {label}
+            </span>
+
+            {/* Shine effect on active */}
+            {active && (
+                <motion.div
+                    className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-50 pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.5 }}
+                />
+            )}
+        </motion.button>
+    );
+};
 
 // ============================================
 // TAB BUTTON (SUB TABS)
@@ -290,12 +327,12 @@ const MatchCenter = () => {
 
             <div className="container mx-auto px-4 max-w-5xl">
                 {/* Game Switcher */}
-                <div className="flex overflow-x-auto no-scrollbar gap-4 mb-8 pb-4">
-                    <GameTabButton label="Cricket" icon={Circle} active={selectedGame === 'cricket'} onClick={() => setSelectedGame('cricket')} color="emerald" />
-                    <GameTabButton label="Badminton" icon={Activity} active={selectedGame === 'badminton'} onClick={() => setSelectedGame('badminton')} color="blue" />
-                    <GameTabButton label="Table Tennis" icon={Dna} active={selectedGame === 'table_tennis'} onClick={() => setSelectedGame('table_tennis')} color="orange" />
-                    <GameTabButton label="Chess" icon={Grip} active={selectedGame === 'chess'} onClick={() => setSelectedGame('chess')} color="slate" />
-                    <GameTabButton label="Carrom" icon={Disc} active={selectedGame === 'carrom'} onClick={() => setSelectedGame('carrom')} color="amber" />
+                <div className="flex overflow-x-auto no-scrollbar gap-3 md:gap-4 mb-8 pb-4">
+                    <GameTabButton label="Cricket" icon={Circle} active={selectedGame === 'cricket'} onClick={() => setSelectedGame('cricket')} sportKey="cricket" />
+                    <GameTabButton label="Badminton" icon={Activity} active={selectedGame === 'badminton'} onClick={() => setSelectedGame('badminton')} sportKey="badminton" />
+                    <GameTabButton label="Table Tennis" icon={Dna} active={selectedGame === 'table_tennis'} onClick={() => setSelectedGame('table_tennis')} sportKey="table_tennis" />
+                    <GameTabButton label="Chess" icon={Grip} active={selectedGame === 'chess'} onClick={() => setSelectedGame('chess')} sportKey="chess" />
+                    <GameTabButton label="Carrom" icon={Disc} active={selectedGame === 'carrom'} onClick={() => setSelectedGame('carrom')} sportKey="carrom" />
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -456,58 +493,180 @@ const MatchCenter = () => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                         >
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {knockoutMatches.filter((m: any) => m.gameType === selectedGame).map((match: any) => {
+                            {/* Sport Header */}
+                            <div className="text-center mb-8">
+                                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-white border border-slate-200 shadow-sm mb-4">
+                                    <span className="text-2xl">{SPORT_CONFIG[selectedGame]?.emoji}</span>
+                                    <span className="font-display font-bold uppercase tracking-wider text-slate-700">
+                                        {selectedGame.replace('_', ' ')} Championship
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Live Matches Section */}
+                            {knockoutMatches.filter((m: any) => m.gameType === selectedGame && m.status === 'live').length > 0 && (
+                                <div className="mb-10">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="live-dot" />
+                                        <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Live Now</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {knockoutMatches.filter((m: any) => m.gameType === selectedGame && m.status === 'live').map((match: any) => {
+                                            const teamA = teams.find(t => t.id === match.teamAId);
+                                            const teamB = teams.find(t => t.id === match.teamBId);
+                                            const config = SPORT_CONFIG[selectedGame];
+
+                                            return (
+                                                <motion.div
+                                                    key={match.id}
+                                                    initial={{ scale: 0.95, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    className={`relative overflow-hidden bg-gradient-to-br ${config?.lightBg} p-6 rounded-3xl shadow-xl border-2 ${config?.borderActive}`}
+                                                >
+                                                    {/* Top gradient bar */}
+                                                    <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${config?.gradient}`} />
+
+                                                    {/* Live badge */}
+                                                    <div className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500 text-white">
+                                                        <motion.div
+                                                            className="w-2 h-2 rounded-full bg-white"
+                                                            animate={{ opacity: [1, 0.3, 1] }}
+                                                            transition={{ duration: 1, repeat: Infinity }}
+                                                        />
+                                                        <span className="text-xs font-bold uppercase tracking-wider">Live</span>
+                                                    </div>
+
+                                                    <div className="text-center mb-4 mt-4">
+                                                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{match.stage.replace('_', ' ')}</span>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div className="text-center flex-1">
+                                                            <div className="text-3xl mb-2">{SPORT_CONFIG[selectedGame]?.emoji}</div>
+                                                            <div className="font-bold text-xl text-slate-800 leading-tight">{teamA?.name || 'TBD'}</div>
+                                                        </div>
+                                                        <div className="px-4">
+                                                            <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${config?.gradient} flex items-center justify-center text-white font-black text-sm shadow-lg`}>
+                                                                VS
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-center flex-1">
+                                                            <div className="text-3xl mb-2">{SPORT_CONFIG[selectedGame]?.emoji}</div>
+                                                            <div className="font-bold text-xl text-slate-800 leading-tight">{teamB?.name || 'TBD'}</div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* All Matches Grid */}
+                            <div className="mb-6">
+                                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">All Matches</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                {knockoutMatches.filter((m: any) => m.gameType === selectedGame).map((match: any, index: number) => {
                                     const teamA = teams.find(t => t.id === match.teamAId);
                                     const teamB = teams.find(t => t.id === match.teamBId);
                                     const isCompleted = match.status === 'completed';
                                     const isScheduled = match.status === 'scheduled';
+                                    const isLive = match.status === 'live';
+                                    const config = SPORT_CONFIG[selectedGame];
 
                                     return (
-                                        <div key={match.id} className={`relative overflow-hidden bg-white p-6 rounded-3xl shadow-lg border-2 ${isCompleted ? 'border-slate-100 opacity-80' : 'border-blue-100'}`}>
-                                            {isCompleted && (
-                                                <div className="absolute top-0 right-0 bg-slate-100 px-3 py-1 rounded-bl-xl text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                                    Completed
-                                                </div>
-                                            )}
-                                            {isScheduled && (
-                                                <div className="absolute top-0 right-0 bg-blue-100 px-3 py-1 rounded-bl-xl text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
-                                                    <Clock size={12} /> Scheduled
-                                                </div>
+                                        <motion.div
+                                            key={match.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            whileHover={{ y: -4, scale: 1.02 }}
+                                            className={`relative overflow-hidden bg-white p-5 rounded-2xl shadow-lg border-2 transition-all
+                                                ${isLive ? config?.borderActive + ' shadow-xl' : isCompleted ? 'border-slate-100 opacity-90' : 'border-slate-100 hover:border-slate-200'}`}
+                                        >
+                                            {/* Top gradient bar for live/scheduled */}
+                                            {(isLive || isScheduled) && (
+                                                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${isLive ? config?.gradient : 'from-slate-300 to-slate-400'}`} />
                                             )}
 
-                                            <div className="text-center mb-6 mt-2">
-                                                <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{match.stage.replace('_', ' ')}</span>
+                                            {/* Status badge */}
+                                            <div className="absolute top-3 right-3">
+                                                {isLive && (
+                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white">
+                                                        <motion.div
+                                                            className="w-1.5 h-1.5 rounded-full bg-white"
+                                                            animate={{ opacity: [1, 0.3, 1] }}
+                                                            transition={{ duration: 1, repeat: Infinity }}
+                                                        />
+                                                        <span className="text-[10px] font-bold uppercase">Live</span>
+                                                    </div>
+                                                )}
+                                                {isCompleted && (
+                                                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-600">
+                                                        <Trophy size={10} />
+                                                        <span className="text-[10px] font-bold uppercase">Done</span>
+                                                    </div>
+                                                )}
+                                                {isScheduled && (
+                                                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
+                                                        <Clock size={10} />
+                                                        <span className="text-[10px] font-bold uppercase">Soon</span>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            <div className="flex items-center justify-between mb-6">
+                                            {/* Stage */}
+                                            <div className="text-center mb-4 mt-2">
+                                                <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${config?.lightBg} text-slate-600`}>
+                                                    {match.stage.replace('_', ' ')}
+                                                </span>
+                                            </div>
+
+                                            {/* Teams */}
+                                            <div className="flex items-center justify-between mb-4">
                                                 <div className="text-center flex-1">
-                                                    <div className="font-bold text-lg text-slate-800 leading-tight mb-1">{teamA?.name || 'TBD'}</div>
-                                                    {isCompleted && match.winnerId === teamA?.id && <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded">Winner</span>}
+                                                    <div className="font-bold text-base text-slate-800 leading-tight mb-1">{teamA?.name || 'TBD'}</div>
+                                                    {isCompleted && match.winnerTeamId === teamA?.id && (
+                                                        <span className={`inline-block px-2 py-0.5 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
+                                                    )}
                                                 </div>
-                                                <div className="px-4 text-slate-300 font-black text-xl">VS</div>
+                                                <div className="px-3">
+                                                    <span className="text-slate-300 font-black text-sm">VS</span>
+                                                </div>
                                                 <div className="text-center flex-1">
-                                                    <div className="font-bold text-lg text-slate-800 leading-tight mb-1">{teamB?.name || 'TBD'}</div>
-                                                    {isCompleted && match.winnerId === teamB?.id && <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded">Winner</span>}
+                                                    <div className="font-bold text-base text-slate-800 leading-tight mb-1">{teamB?.name || 'TBD'}</div>
+                                                    {isCompleted && match.winnerTeamId === teamB?.id && (
+                                                        <span className={`inline-block px-2 py-0.5 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {match.resultMessage && (
-                                                <div className="bg-slate-50 p-3 rounded-xl text-center">
-                                                    <p className="text-sm font-medium text-slate-600">{match.resultMessage}</p>
-                                                </div>
-                                            )}
-                                        </div>
+                                            {/* Match type badge */}
+                                            <div className="text-center">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                    {match.matchType}
+                                                </span>
+                                            </div>
+                                        </motion.div>
                                     );
                                 })}
 
                                 {knockoutMatches.filter((m: any) => m.gameType === selectedGame).length === 0 && (
                                     <div className="col-span-full py-16 text-center">
-                                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4">
-                                            <Clock size={24} className="text-slate-400" />
-                                        </div>
-                                        <h3 className="text-lg font-bold text-slate-800 mb-2">No Matches Found</h3>
-                                        <p className="text-slate-400">There are no scheduled matches for {selectedGame.replace('_', ' ')} yet.</p>
+                                        <motion.div
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="inline-flex flex-col items-center"
+                                        >
+                                            <div className={`w-20 h-20 rounded-3xl ${SPORT_CONFIG[selectedGame]?.lightBg} flex items-center justify-center mb-4 shadow-lg`}>
+                                                <span className="text-4xl">{SPORT_CONFIG[selectedGame]?.emoji}</span>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-800 mb-2">No Matches Yet</h3>
+                                            <p className="text-slate-400 max-w-sm">
+                                                {selectedGame.replace('_', ' ')} matches will appear here once scheduled by admin.
+                                            </p>
+                                        </motion.div>
                                     </div>
                                 )}
                             </div>

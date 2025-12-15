@@ -59,15 +59,18 @@ const KnockoutMatchSetup = () => {
 
     const formatGameName = (g: string) => g.replace('_', ' ').toUpperCase();
 
-    // Determine max players allowed based on game type
-    // Chess is always singles. Carrom/TT/Badminton can be singles/doubles.
+    // Determine allowed match types based on game
     const supportsDoubles = gameType !== 'chess';
+    const supportsSingles = gameType !== 'table_tennis';
 
     useEffect(() => {
         if (!supportsDoubles && matchType === 'doubles') {
             setMatchType('singles');
         }
-    }, [gameType, supportsDoubles]);
+        if (!supportsSingles && matchType === 'singles') {
+            setMatchType('doubles');
+        }
+    }, [gameType, supportsDoubles, supportsSingles]);
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20 safe-area-pb">
@@ -99,12 +102,14 @@ const KnockoutMatchSetup = () => {
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Match Type</label>
                                 <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-200">
-                                    <button
-                                        className={`flex-1 py-3 rounded-lg text-sm font-bold uppercase transition-all ${matchType === 'singles' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
-                                        onClick={() => { setMatchType('singles'); setTeamAPlayers([]); setTeamBPlayers([]); }}
-                                    >
-                                        Singles
-                                    </button>
+                                    {supportsSingles && (
+                                        <button
+                                            className={`flex-1 py-3 rounded-lg text-sm font-bold uppercase transition-all ${matchType === 'singles' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+                                            onClick={() => { setMatchType('singles'); setTeamAPlayers([]); setTeamBPlayers([]); }}
+                                        >
+                                            Singles
+                                        </button>
+                                    )}
                                     {supportsDoubles && (
                                         <button
                                             className={`flex-1 py-3 rounded-lg text-sm font-bold uppercase transition-all ${matchType === 'doubles' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
