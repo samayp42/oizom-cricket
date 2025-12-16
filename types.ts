@@ -154,4 +154,5 @@ export interface KnockoutMatch {
   winnerTeamId?: string;
   status: 'scheduled' | 'completed';
   pointsAwarded: number; // 6, 8, or 10
+  resultMessage?: string; // e.g., "21-18" for badminton/table tennis
 }

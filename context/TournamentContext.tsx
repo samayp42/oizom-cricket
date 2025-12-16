@@ -35,7 +35,7 @@ interface TournamentContextType {
   setActiveGame: (game: GameType) => void;
   knockoutMatches: KnockoutMatch[];
   createKnockoutMatch: (gameType: GameType, teamAId: string, teamBId: string, stage: KnockoutMatchStage, matchType: KnockoutMatchType, teamAPlayerIds: string[], teamBPlayerIds: string[]) => void;
-  resolveKnockoutMatch: (matchId: string, winnerTeamId: string) => void;
+  resolveKnockoutMatch: (matchId: string, winnerTeamId: string, resultMessage?: string) => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -1108,7 +1108,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     }
   };
 
-  const resolveKnockoutMatch = (matchId: string, winnerTeamId: string) => {
+  const resolveKnockoutMatch = (matchId: string, winnerTeamId: string, resultMessage?: string) => {
     const matches = data.knockoutMatches || [];
     const matchIndex = matches.findIndex(m => m.id === matchId);
     if (matchIndex === -1) return;
@@ -1116,6 +1116,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     const match = { ...matches[matchIndex] };
     match.winnerTeamId = winnerTeamId;
     match.status = 'completed';
+    if (resultMessage) {
+      (match as any).resultMessage = resultMessage;
+    }
 
     const winnerTeam = data.teams.find(t => t.id === winnerTeamId);
     const loserTeamId = match.teamAId === winnerTeamId ? match.teamBId : match.teamAId;
@@ -1165,7 +1168,8 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     if (isSupabaseEnabled) {
       supabase!.from('knockout_matches').update({
         winner_team_id: winnerTeamId,
-        status: 'completed'
+        status: 'completed',
+        result_message: resultMessage || null
       }).eq('id', matchId).then();
 
       // Update specific stats column in Supabase

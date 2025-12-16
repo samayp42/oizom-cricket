@@ -214,13 +214,38 @@ const CricketMatchControl = ({ navigate, resetTournament, resetMatchesOnly, matc
 };
 
 // ============================================
-// BADMINTON MATCH CONTROL
-// ============================================
-// ============================================
 // KNOCKOUT MATCH CONTROL
 // ============================================
 const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, teams, gameType }: any) => {
     const gameMatches = knockoutMatches.filter((m: any) => m.gameType === gameType);
+    const [resultModal, setResultModal] = useState<{ match: any; teamA: any; teamB: any } | null>(null);
+    const [selectedWinner, setSelectedWinner] = useState<string>('');
+    const [scoreA, setScoreA] = useState<number>(0);
+    const [scoreB, setScoreB] = useState<number>(0);
+
+    const needsScores = gameType === 'badminton' || gameType === 'table_tennis';
+
+    const openResultModal = (match: any) => {
+        const teamA = teams.find((t: any) => t.id === match.teamAId);
+        const teamB = teams.find((t: any) => t.id === match.teamBId);
+        setResultModal({ match, teamA, teamB });
+        setSelectedWinner('');
+        setScoreA(0);
+        setScoreB(0);
+    };
+
+    const submitResult = () => {
+        if (!resultModal || !selectedWinner) return;
+
+        // Build result message
+        let resultMessage = '';
+        if (needsScores) {
+            resultMessage = `${scoreA}-${scoreB}`;
+        }
+
+        resolveMatch(resultModal.match.id, selectedWinner, resultMessage);
+        setResultModal(null);
+    };
 
     return (
         <div className="space-y-8">
@@ -264,20 +289,12 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, teams, 
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => { if (confirm(`Declare ${teamA?.name} as winner?`)) resolveMatch(match.id, match.teamAId); }}
-                                    className="px-4 py-2 rounded-lg bg-green-50 text-green-600 font-bold text-xs uppercase hover:bg-green-100"
-                                >
-                                    {teamA?.name} Won
-                                </button>
-                                <button
-                                    onClick={() => { if (confirm(`Declare ${teamB?.name} as winner?`)) resolveMatch(match.id, match.teamBId); }}
-                                    className="px-4 py-2 rounded-lg bg-green-50 text-green-600 font-bold text-xs uppercase hover:bg-green-100"
-                                >
-                                    {teamB?.name} Won
-                                </button>
-                            </div>
+                            <button
+                                onClick={() => openResultModal(match)}
+                                className="px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold text-sm uppercase hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
+                            >
+                                Enter Result
+                            </button>
                         </motion.div>
                     );
                 })}
@@ -289,24 +306,152 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, teams, 
                 )}
             </div>
 
-            {/* Completed History (Mini) */}
+            {/* Completed History */}
             <div>
                 <h3 className="font-bold text-slate-400 uppercase tracking-widest text-xs mb-4">Recent Results</h3>
-                <div className="space-y-2 opacity-60">
+                <div className="space-y-2">
                     {gameMatches.filter((m: any) => m.status === 'completed').slice(-5).reverse().map((match: any) => {
                         const winner = teams.find((t: any) => t.id === match.winnerTeamId);
+                        const teamA = teams.find((t: any) => t.id === match.teamAId);
+                        const teamB = teams.find((t: any) => t.id === match.teamBId);
                         return (
-                            <div key={match.id} className="flex justify-between p-3 bg-slate-50 rounded-xl text-sm">
-                                <span>{match.stage}</span>
-                                <span className="font-bold text-green-600">{winner?.name || 'Unknown'} Won</span>
+                            <div key={match.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl text-sm">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-slate-500">{match.stage}</span>
+                                    <span className={`font-bold ${winner?.id === teamA?.id ? 'text-green-600' : 'text-slate-600'}`}>
+                                        {teamA?.name}
+                                    </span>
+                                    {match.resultMessage && (
+                                        <span className="font-mono text-slate-800 bg-slate-200 px-2 py-1 rounded">
+                                            {match.resultMessage}
+                                        </span>
+                                    )}
+                                    <span className={`font-bold ${winner?.id === teamB?.id ? 'text-green-600' : 'text-slate-600'}`}>
+                                        {teamB?.name}
+                                    </span>
+                                </div>
+                                <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded">
+                                    {winner?.name} Won
+                                </span>
                             </div>
                         );
                     })}
                 </div>
             </div>
+
+            {/* Result Entry Modal */}
+            <AnimatePresence>
+                {resultModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+                        onClick={() => setResultModal(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 50 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 50 }}
+                            className="w-full max-w-lg bg-white rounded-3xl p-8 shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <h2 className="text-2xl font-display font-bold text-slate-800 text-center mb-2 uppercase tracking-wide">
+                                Enter Result
+                            </h2>
+                            <p className="text-center text-slate-500 mb-6">
+                                {resultModal.teamA?.name} vs {resultModal.teamB?.name}
+                            </p>
+
+                            {/* Winner Selection */}
+                            <div className="mb-6">
+                                <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 block">
+                                    Who Won?
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => setSelectedWinner(resultModal.match.teamAId)}
+                                        className={`p-4 rounded-xl font-bold text-lg transition-all ${selectedWinner === resultModal.match.teamAId
+                                                ? 'bg-green-500 text-white shadow-lg'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        {resultModal.teamA?.name}
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedWinner(resultModal.match.teamBId)}
+                                        className={`p-4 rounded-xl font-bold text-lg transition-all ${selectedWinner === resultModal.match.teamBId
+                                                ? 'bg-green-500 text-white shadow-lg'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        {resultModal.teamB?.name}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Score Entry (for badminton/table tennis) */}
+                            {needsScores && selectedWinner && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    className="mb-6"
+                                >
+                                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 block">
+                                        Final Score
+                                    </label>
+                                    <div className="flex items-center justify-center gap-4">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-xs text-slate-500 mb-2">{resultModal.teamA?.name}</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="99"
+                                                value={scoreA}
+                                                onChange={e => setScoreA(parseInt(e.target.value) || 0)}
+                                                className="w-20 h-16 text-3xl font-bold text-center rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <span className="text-3xl font-bold text-slate-300">-</span>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-xs text-slate-500 mb-2">{resultModal.teamB?.name}</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="99"
+                                                value={scoreB}
+                                                onChange={e => setScoreB(parseInt(e.target.value) || 0)}
+                                                className="w-20 h-16 text-3xl font-bold text-center rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* Submit Button */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setResultModal(null)}
+                                    className="flex-1 py-4 rounded-xl bg-slate-100 text-slate-600 font-bold uppercase text-sm hover:bg-slate-200"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={submitResult}
+                                    disabled={!selectedWinner}
+                                    className="flex-1 py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold uppercase text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-600 hover:to-emerald-600"
+                                >
+                                    Confirm Result
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
+
 
 // ============================================
 // TEAM MANAGEMENT SECTION
