@@ -3,7 +3,7 @@ import { useTournament } from '../context/TournamentContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trophy, Shield, TrendingUp, Users, Target, Award, Zap, ChevronRight, Play, Star, Activity, Radio } from 'lucide-react';
 import { calculateNRR, formatOvers } from '../utils/nrr';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================
 // STAT CARD
@@ -495,6 +495,216 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
 };
 
 // ============================================
+// UPCOMING FIXTURES DATA
+// ============================================
+const FIXTURES_DATA = [
+  {
+    date: '17th December',
+    events: [
+      {
+        sport: 'Chess',
+        emoji: '♟️',
+        time: '10:00 AM – 1:00 PM',
+        gradient: 'from-slate-700 to-slate-600',
+        matches: [
+          { teamA: 'Phoenix Flames', teamB: 'Oizomad Squad' },
+          { teamA: 'Gully Gang', teamB: 'Bapu Na Blasters' },
+          { teamA: 'Oizom Titans', teamB: 'Sledgers Regiment' },
+          { teamA: 'Wozio Warriors', teamB: 'Neon Ninjas' },
+        ]
+      },
+      {
+        sport: 'Badminton Singles',
+        emoji: '🏸',
+        time: 'Starts at 1:00 PM',
+        gradient: 'from-blue-600 to-indigo-500',
+        matches: [
+          { teamA: 'Phoenix Flames', teamB: 'Wozio Warriors' },
+          { teamA: 'Neon Ninjas', teamB: 'Oizom Titans' },
+          { teamA: 'Sledgers Regiment', teamB: 'Gully Gang' },
+          { teamA: 'Bapu Na Blasters', teamB: 'Oizomad Squad' },
+        ]
+      },
+      {
+        sport: 'Badminton Doubles',
+        emoji: '🏸',
+        time: 'Starts at 1:45 PM',
+        gradient: 'from-indigo-600 to-purple-500',
+        matches: [
+          { teamA: 'Phoenix Flames', teamB: 'Oizom Titans' },
+          { teamA: 'Wozio Warriors', teamB: 'Gully Gang' },
+          { teamA: 'Neon Ninjas', teamB: 'Oizomad Squad' },
+          { teamA: 'Sledgers Regiment', teamB: 'Bapu Na Blasters' },
+        ]
+      }
+    ]
+  },
+  {
+    date: '18th December',
+    events: [
+      {
+        sport: 'Carrom',
+        emoji: '🎯',
+        time: '10:00 AM – 1:00 PM',
+        gradient: 'from-amber-500 to-yellow-500',
+        matches: [
+          { teamA: 'Phoenix Flames', teamB: 'Bapu Na Blasters' },
+          { teamA: 'Oizomad Squad', teamB: 'Sledgers Regiment' },
+          { teamA: 'Gully Gang', teamB: 'Neon Ninjas' },
+          { teamA: 'Oizom Titans', teamB: 'Wozio Warriors' },
+        ]
+      },
+      {
+        sport: 'Cricket',
+        emoji: '🏏',
+        time: '1:30 PM – 8:00 PM',
+        gradient: 'from-cricket-primary to-cricket-secondary',
+        matches: [
+          { time: '1:30 PM', teamA: 'Oizom Titans', teamB: 'Gully Gang' },
+          { time: '2:05 PM', teamA: 'Phoenix Flames', teamB: 'Sledgers Regiment' },
+          { time: '2:40 PM', teamA: 'Oizomad Squad', teamB: 'Wozio Warriors' },
+          { time: '3:15 PM', teamA: 'Neon Ninjas', teamB: 'Bapu Na Blasters' },
+          { time: '3:50 PM', teamA: 'Oizom Titans', teamB: 'Wozio Warriors' },
+          { time: '4:25 PM', teamA: 'Phoenix Flames', teamB: 'Bapu Na Blasters' },
+          { time: '5:00 PM', teamA: 'Gully Gang', teamB: 'Oizomad Squad' },
+          { time: '5:35 PM', teamA: 'Sledgers Regiment', teamB: 'Neon Ninjas' },
+          { time: '6:10 PM', teamA: 'Oizom Titans', teamB: 'Oizomad Squad' },
+          { time: '6:45 PM', teamA: 'Phoenix Flames', teamB: 'Neon Ninjas' },
+          { time: '7:20 PM', teamA: 'Gully Gang', teamB: 'Wozio Warriors' },
+          { time: '7:55 PM', teamA: 'Sledgers Regiment', teamB: 'Bapu Na Blasters' },
+        ]
+      }
+    ]
+  },
+  {
+    date: '19th December',
+    events: [
+      {
+        sport: 'Table Tennis',
+        emoji: '🏓',
+        time: '10:00 AM – 1:00 PM',
+        gradient: 'from-orange-500 to-red-500',
+        matches: [
+          { teamA: 'Phoenix Flames', teamB: 'Gully Gang' },
+          { teamA: 'Oizom Titans', teamB: 'Oizomad Squad' },
+          { teamA: 'Wozio Warriors', teamB: 'Bapu Na Blasters' },
+          { teamA: 'Neon Ninjas', teamB: 'Sledgers Regiment' },
+        ]
+      }
+    ]
+  }
+];
+
+// ============================================
+// UPCOMING FIXTURES COMPONENT
+// ============================================
+const UpcomingFixtures = () => {
+  const [expandedDay, setExpandedDay] = React.useState<string | null>(FIXTURES_DATA[0]?.date || null);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-12"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cricket-primary to-cricket-secondary flex items-center justify-center">
+          <span className="text-xl">📅</span>
+        </div>
+        <div>
+          <h2 className="font-display text-2xl font-bold text-cricket-textPrimary uppercase tracking-wide">
+            Tournament Schedule
+          </h2>
+          <p className="text-sm text-cricket-textMuted">17th - 19th December 2024</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {FIXTURES_DATA.map((day) => (
+          <div key={day.date} className="card-cricket overflow-hidden">
+            {/* Day Header */}
+            <button
+              onClick={() => setExpandedDay(expandedDay === day.date ? null : day.date)}
+              className="w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-cricket-bgAlt to-white hover:from-cricket-primary/5 hover:to-white transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-cricket-primary/10 flex items-center justify-center">
+                  <span className="font-display text-lg font-bold text-cricket-primary">
+                    {day.date.split(' ')[0]}
+                  </span>
+                </div>
+                <div className="text-left">
+                  <h3 className="font-display text-lg font-bold text-cricket-textPrimary">{day.date}</h3>
+                  <p className="text-xs text-cricket-textMuted">{day.events.length} event{day.events.length > 1 ? 's' : ''}</p>
+                </div>
+              </div>
+              <motion.div
+                animate={{ rotate: expandedDay === day.date ? 180 : 0 }}
+                className="text-cricket-textMuted"
+              >
+                <ChevronRight size={20} className="rotate-90" />
+              </motion.div>
+            </button>
+
+            {/* Events */}
+            <AnimatePresence>
+              {expandedDay === day.date && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 space-y-4 bg-cricket-bgAlt/30">
+                    {day.events.map((event, eventIdx) => (
+                      <div key={eventIdx} className="bg-white rounded-2xl border border-cricket-border overflow-hidden shadow-sm">
+                        {/* Event Header */}
+                        <div className={`px-4 py-3 bg-gradient-to-r ${event.gradient} flex items-center gap-3`}>
+                          <span className="text-2xl">{event.emoji}</span>
+                          <div className="flex-1">
+                            <h4 className="font-bold text-white">{event.sport}</h4>
+                            <p className="text-white/80 text-xs">{event.time}</p>
+                          </div>
+                          <span className="px-3 py-1 bg-white/20 rounded-full text-white text-xs font-bold">
+                            {event.matches.length} matches
+                          </span>
+                        </div>
+
+                        {/* Matches Grid */}
+                        <div className="p-3 grid gap-2">
+                          {event.matches.map((match: any, matchIdx) => (
+                            <div
+                              key={matchIdx}
+                              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-cricket-bgAlt/50 hover:bg-cricket-primary/5 transition-colors"
+                            >
+                              {match.time && (
+                                <span className="text-xs font-mono font-bold text-cricket-primary bg-cricket-primary/10 px-2 py-1 rounded-lg min-w-[65px] text-center">
+                                  {match.time}
+                                </span>
+                              )}
+                              <div className="flex-1 flex items-center justify-between">
+                                <span className="font-semibold text-sm text-cricket-textPrimary">{match.teamA}</span>
+                                <span className="text-[10px] font-black text-cricket-textMuted uppercase tracking-widest px-2">vs</span>
+                                <span className="font-semibold text-sm text-cricket-textPrimary text-right">{match.teamB}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+// ============================================
 // MAIN DASHBOARD
 // ============================================
 const Dashboard = () => {
@@ -561,7 +771,8 @@ const Dashboard = () => {
         {/* Overall Leaderboard */}
         <OverallLeaderboard teams={teams} />
 
-
+        {/* Tournament Schedule */}
+        <UpcomingFixtures />
 
         {/* Quick Stats */}
         <motion.div
@@ -658,7 +869,7 @@ const Dashboard = () => {
             </motion.button>
           </Link>
           {activeGame === 'cricket' && activeMatch && (
-            <Link to="/scoring">
+            <Link to="/scorer">
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
