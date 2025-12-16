@@ -216,7 +216,7 @@ const CricketMatchControl = ({ navigate, resetTournament, resetMatchesOnly, matc
 // ============================================
 // KNOCKOUT MATCH CONTROL
 // ============================================
-const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, teams, gameType }: any) => {
+const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteMatch, teams, gameType }: any) => {
     const gameMatches = knockoutMatches.filter((m: any) => m.gameType === gameType);
     const [resultModal, setResultModal] = useState<{ match: any; teamA: any; teamB: any } | null>(null);
     const [selectedWinner, setSelectedWinner] = useState<string>('');
@@ -289,12 +289,21 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, teams, 
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => openResultModal(match)}
-                                className="px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold text-sm uppercase hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
-                            >
-                                Enter Result
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => openResultModal(match)}
+                                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold text-sm uppercase hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
+                                >
+                                    Enter Result
+                                </button>
+                                <button
+                                    onClick={() => deleteMatch(match.id)}
+                                    className="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all"
+                                    title="Delete Match"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
                         </motion.div>
                     );
                 })}
@@ -372,8 +381,8 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, teams, 
                                     <button
                                         onClick={() => setSelectedWinner(resultModal.match.teamAId)}
                                         className={`p-4 rounded-xl font-bold text-lg transition-all ${selectedWinner === resultModal.match.teamAId
-                                                ? 'bg-green-500 text-white shadow-lg'
-                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                            ? 'bg-green-500 text-white shadow-lg'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
                                         {resultModal.teamA?.name}
@@ -381,8 +390,8 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, teams, 
                                     <button
                                         onClick={() => setSelectedWinner(resultModal.match.teamBId)}
                                         className={`p-4 rounded-xl font-bold text-lg transition-all ${selectedWinner === resultModal.match.teamBId
-                                                ? 'bg-green-500 text-white shadow-lg'
-                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                            ? 'bg-green-500 text-white shadow-lg'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
                                         {resultModal.teamB?.name}
@@ -700,7 +709,7 @@ const TeamManagementSection = ({
 // MAIN ADMIN DASHBOARD
 // ============================================
 const AdminDashboard = () => {
-    const { isAdmin, login, logout, teams, matches, activeMatch, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, resetTournament, resetMatchesOnly, knockoutMatches, resolveKnockoutMatch, setActiveGame } = useTournament();
+    const { isAdmin, login, logout, teams, matches, activeMatch, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, resetTournament, resetMatchesOnly, knockoutMatches, resolveKnockoutMatch, deleteKnockoutMatch, setActiveGame } = useTournament();
     const navigate = useNavigate();
     const [pin, setPin] = useState('');
     const [activeTab, setActiveTab] = useState<'match' | 'teams'>('match');
@@ -789,6 +798,7 @@ const AdminDashboard = () => {
                                 navigate={navigate}
                                 knockoutMatches={knockoutMatches}
                                 resolveMatch={resolveKnockoutMatch}
+                                deleteMatch={deleteKnockoutMatch}
                                 teams={teams}
                                 gameType={selectedGame}
                             />

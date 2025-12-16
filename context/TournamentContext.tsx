@@ -36,6 +36,7 @@ interface TournamentContextType {
   knockoutMatches: KnockoutMatch[];
   createKnockoutMatch: (gameType: GameType, teamAId: string, teamBId: string, stage: KnockoutMatchStage, matchType: KnockoutMatchType, teamAPlayerIds: string[], teamBPlayerIds: string[]) => void;
   resolveKnockoutMatch: (matchId: string, winnerTeamId: string, resultMessage?: string) => void;
+  deleteKnockoutMatch: (matchId: string) => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -1192,6 +1193,17 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     }
   };
 
+  const deleteKnockoutMatch = (matchId: string) => {
+    if (!confirm('Delete this match?')) return;
+
+    const updatedMatches = (data.knockoutMatches || []).filter(m => m.id !== matchId);
+    setData({ ...data, knockoutMatches: updatedMatches });
+
+    if (isSupabaseEnabled) {
+      supabase!.from('knockout_matches').delete().eq('id', matchId).then();
+    }
+  };
+
   return (
     <TournamentContext.Provider value={{
       isAdmin, login, logout,
@@ -1199,7 +1211,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, createMatch, updateMatchToss, startInnings, setNextBowler,
       recordBall, undoLastBall, endMatch, abandonMatch, resetTournament, resetMatchesOnly, generateKnockouts,
       // Knockout
-      activeGame, setActiveGame, knockoutMatches: data.knockoutMatches || [], createKnockoutMatch, resolveKnockoutMatch
+      activeGame, setActiveGame, knockoutMatches: data.knockoutMatches || [], createKnockoutMatch, resolveKnockoutMatch, deleteKnockoutMatch
     }}>
       {children}
     </TournamentContext.Provider>
