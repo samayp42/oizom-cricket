@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { HashRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
 import { TournamentProvider } from './context/TournamentContext';
 import Dashboard from './components/Dashboard';
@@ -7,7 +7,8 @@ import Scorer from './components/Scorer';
 import AdminDashboard from './components/AdminDashboard';
 import MatchCenter from './components/MatchCenter';
 import KnockoutMatchSetup from './components/KnockoutMatchSetup';
-import { Shield, Home, Tv, Zap } from 'lucide-react';
+import PlayerStats from './components/PlayerStats';
+import { Shield, Home, Tv, Trophy } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -47,19 +48,12 @@ const NavItem = ({ to, icon: Icon, label, isActive }: { to: string; icon: any; l
 
 
 // Main Layout Component
-const Layout = ({ children }: React.PropsWithChildren<{}>) => {
+const Layout = () => {
   const location = useLocation();
-  const hideNav = ['/scorer', '/live'].includes(location.pathname);
-
-
-
+  const hideNav = ['/scorer', '/live', '/stats'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-sports-white dark:bg-sports-black text-slate-900 dark:text-white font-sans transition-colors duration-500">
-      {/* Fixed Theme Toggle */}
-
-
-
       {/* Navigation */}
       <AnimatePresence>
         {!hideNav && (
@@ -107,6 +101,12 @@ const Layout = ({ children }: React.PropsWithChildren<{}>) => {
                       isActive={location.pathname === '/live'}
                     />
                     <NavItem
+                      to="/stats"
+                      icon={Trophy}
+                      label="Stats"
+                      isActive={location.pathname === '/stats'}
+                    />
+                    <NavItem
                       to="/admin"
                       icon={Shield}
                       label="Admin"
@@ -134,17 +134,15 @@ const Layout = ({ children }: React.PropsWithChildren<{}>) => {
 
       {/* Main Content with Page Transitions */}
       <main className={!hideNav ? "pb-28 md:pt-20 md:pb-8" : ""}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/setup" element={<MatchSetup />} />
+          <Route path="/knockout-setup" element={<KnockoutMatchSetup />} />
+          <Route path="/scorer" element={<Scorer />} />
+          <Route path="/live" element={<MatchCenter />} />
+          <Route path="/stats" element={<PlayerStats />} />
+        </Routes>
       </main>
     </div>
   );
@@ -155,16 +153,7 @@ function App() {
   return (
     <TournamentProvider>
       <HashRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/setup" element={<MatchSetup />} />
-            <Route path="/knockout-setup" element={<KnockoutMatchSetup />} />
-            <Route path="/scorer" element={<Scorer />} />
-            <Route path="/live" element={<MatchCenter />} />
-          </Routes>
-        </Layout>
+        <Layout />
       </HashRouter>
     </TournamentProvider>
   );
