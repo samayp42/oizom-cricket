@@ -784,9 +784,15 @@ const Scorer = () => {
                                         onChange={e => setNewBatter(e.target.value)}
                                     >
                                         <option value="">Select Player...</option>
-                                        {battingTeam?.players.filter(p => !currentInnings.battingOrder.includes(p.id)).map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
+                                        {battingTeam?.players
+                                            .filter(p =>
+                                                !currentInnings.battingOrder.includes(p.id) &&
+                                                !currentInnings.playersOut.includes(p.id)
+                                            )
+                                            .map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))
+                                        }
                                     </select>
                                 </div>
 
