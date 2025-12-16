@@ -28,6 +28,7 @@ interface TournamentContextType {
   endMatch: (matchId: string) => void;
   abandonMatch: (matchId: string) => void;
   resetTournament: () => void;
+  resetMatchesOnly: () => void;
   generateKnockouts: () => void;
   // Knockout Games
   activeGame: GameType;
@@ -54,10 +55,22 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     return data.matches.find(m => m.status === 'live' || m.status === 'toss' || m.status === 'innings_break') || null;
   });
 
+  // Flag to skip realtime refetch during local updates
+  const [skipRealtimeUntil, setSkipRealtimeUntil] = useState<number>(0);
+
+  const skipRealtimeFor = (ms: number) => {
+    setSkipRealtimeUntil(Date.now() + ms);
+  };
+
   // --- SUPABASE SYNC ---
   useEffect(() => {
     if (isSupabaseEnabled) {
       const fetchData = async () => {
+        // Skip if we recently made a local change
+        if (Date.now() < skipRealtimeUntil) {
+          return;
+        }
+
         setIsSyncing(true);
         // 1. Fetch Teams
         const { data: teamsData, error: teamsError } = await supabase!.from('teams').select('*');
@@ -93,7 +106,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
               totalOvers: parseFloat(m.total_overs),
               groupStage: m.group_stage,
               knockoutStage: m.knockout_stage,
-              resultMessage: m.result_message
+              resultMessage: m.result_message,
+              playStatus: m.play_status || 'active',  // Critical: Map play_status to playStatus
+              status: m.status || 'scheduled'
             }));
 
             // 3. Fetch Knockout Matches
@@ -130,10 +145,12 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       // Realtime Subscription
       const channel = supabase!.channel('public:data')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
-          // Simple approach: re-fetch or apply delta. Re-fetching is safer for now.
+          // Skip refetch if we recently made a local change
+          if (Date.now() < skipRealtimeUntil) return;
           fetchData();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, (payload) => {
+          if (Date.now() < skipRealtimeUntil) return;
           fetchData();
         })
         .subscribe();
@@ -344,6 +361,112 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     }
   };
 
+  // Helper Functions needed for Match Logic
+  const getTeamName = (id: string, allTeams: Team[]) => allTeams.find(t => t.id === id)?.name || 'Unknown';
+
+  const updateTeamStats = (match: Match) => {
+    if (!match.innings2) return;
+    const t1 = match.innings1!.battingTeamId;
+    const t2 = match.innings2.battingTeamId;
+    const team1 = data.teams.find(t => t.id === t1);
+    const team2 = data.teams.find(t => t.id === t2);
+    if (!team1 || !team2) return;
+    team1.stats.played++;
+    team2.stats.played++;
+    const isGroupStage = match.groupStage;
+    const isSemiFinal = match.knockoutStage === 'SF1' || match.knockoutStage === 'SF2';
+    const isFinal = match.knockoutStage === 'FINAL';
+
+    if (match.winnerId === t1) {
+      team1.stats.won++;
+      team2.stats.lost++;
+
+      if (isGroupStage) {
+        team1.stats.points += 10;
+        // Loser in group stage gets 0
+      } else if (isSemiFinal) {
+        team1.stats.points += 8;
+        team2.stats.points += 3; // Loser gets 3 in SF
+      } else if (isFinal) {
+        team1.stats.points += 10;
+        team2.stats.points += 6; // Runner up gets 6
+      }
+    } else if (match.winnerId === t2) {
+      team2.stats.won++;
+      team1.stats.lost++;
+
+      if (isGroupStage) {
+        team2.stats.points += 10;
+      } else if (isSemiFinal) {
+        team2.stats.points += 8;
+        team1.stats.points += 3;
+      } else if (isFinal) {
+        team2.stats.points += 10;
+        team1.stats.points += 6;
+      }
+    } else {
+      // Tie / No Result
+      team1.stats.tie++;
+      team2.stats.tie++;
+
+      if (isGroupStage) {
+        team1.stats.points += 5;
+        team2.stats.points += 5;
+      } else {
+        team1.stats.points += 5;
+        team2.stats.points += 5;
+      }
+    }
+    team1.stats.totalRunsScored += match.innings1!.totalRuns;
+    team2.stats.totalRunsConceded += match.innings1!.totalRuns;
+    const t1Overs = match.innings1!.wickets >= 10 ? match.totalOvers : match.innings1!.overs;
+    team1.stats.totalOversFaced = addOvers(team1.stats.totalOversFaced, t1Overs);
+    team2.stats.totalOversBowled = addOvers(team2.stats.totalOversBowled, t1Overs);
+    team2.stats.totalRunsScored += match.innings2.totalRuns;
+    team1.stats.totalRunsConceded += match.innings2.totalRuns;
+    const t2Overs = match.innings2.wickets >= 10 ? match.totalOvers : match.innings2.overs;
+    team2.stats.totalOversFaced = addOvers(team2.stats.totalOversFaced, t2Overs);
+    team1.stats.totalOversBowled = addOvers(team1.stats.totalOversBowled, t2Overs);
+    team1.stats.nrr = calculateNRR(team1);
+    team2.stats.nrr = calculateNRR(team2);
+    const newTeams = data.teams.map(t => {
+      if (t.id === t1) return team1;
+      if (t.id === t2) return team2;
+      return t;
+    });
+    setData(prev => ({ ...prev, teams: newTeams }));
+
+    if (isSupabaseEnabled) {
+      supabase!.from('teams').upsert([
+        { id: team1.id, name: team1.name, group: team1.group, stats: team1.stats },
+        { id: team2.id, name: team2.name, group: team2.group, stats: team2.stats }
+      ]).then(({ error }) => {
+        if (error) console.error('Error updating team stats in Supabase:', error);
+      });
+    }
+  };
+
+  const endMatchLogic = (match: Match) => {
+    match.status = 'completed';
+    const score1 = match.innings1!.totalRuns;
+    const score2 = match.innings2 ? match.innings2.totalRuns : 0;
+
+    if (match.innings2) {
+      if (score1 > score2) {
+        match.winnerId = match.innings1!.battingTeamId;
+        match.resultMessage = `${getTeamName(match.innings1!.battingTeamId, data.teams)} won by ${score1 - score2} runs`;
+      } else if (score2 > score1) {
+        match.winnerId = match.innings2.battingTeamId;
+        match.resultMessage = `${getTeamName(match.innings2.battingTeamId, data.teams)} won by ${10 - match.innings2.wickets} wickets`;
+      } else {
+        match.winnerId = undefined;
+        match.resultMessage = "Match Tied";
+      }
+    }
+    updateTeamStats(match);
+  };
+
+
   const createMatch = (teamAId: string, teamBId: string, overs: number) => {
     const newMatch: Match = {
       id: Math.random().toString(36).substr(2, 9),
@@ -382,6 +505,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     match.status = 'scheduled';
     const updatedMatches = [...data.matches];
     updatedMatches[matchIndex] = match;
+    skipRealtimeFor(3000);
     setData({ ...data, matches: updatedMatches });
     setActiveMatch(match);
 
@@ -447,6 +571,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
 
     const updatedMatches = [...data.matches];
     updatedMatches[matchIndex] = match;
+    skipRealtimeFor(3000);
     setData({ ...data, matches: updatedMatches });
     setActiveMatch(match);
 
@@ -474,6 +599,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
 
     const updatedMatches = [...data.matches];
     updatedMatches[matchIndex] = match;
+    skipRealtimeFor(3000);
     setData({ ...data, matches: updatedMatches });
     setActiveMatch(match);
 
@@ -499,11 +625,15 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     // --- Generate Commentary ---
     const battingTeam = data.teams.find(t => t.id === currentInnings.battingTeamId);
     const bowlingTeam = data.teams.find(t => t.id === currentInnings.bowlingTeamId);
+
+    // Deep clone players to avoid mutation issues
     const batter = battingTeam?.players.find(p => p.id === ball.batterId);
     const bowler = bowlingTeam?.players.find(p => p.id === ball.bowlerId);
+    const batterClone = batter ? JSON.parse(JSON.stringify(batter)) : null;
+    const bowlerClone = bowler ? JSON.parse(JSON.stringify(bowler)) : null;
 
     const wasFreeHit = currentInnings.isFreeHit;
-    ball.commentary = generateCommentary(ball, bowler, batter, wasFreeHit);
+    ball.commentary = generateCommentary(ball, bowlerClone, batterClone, wasFreeHit);
 
     // --- 1. Update Score & Wickets ---
     currentInnings.totalRuns += ball.runsScored + ball.extras;
@@ -529,19 +659,19 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       }
     }
 
-    // --- Update Stats Inline (Super Simplified) ---
-    if (batter) {
-      batter.stats.runs += ball.runsScored;
-      if (ball.extraType !== 'wide') batter.stats.balls++;
-      if (ball.runsScored === 4) batter.stats.fours++;
-      if (ball.runsScored === 6) batter.stats.sixes++;
+    // --- Update Stats on cloned players ---
+    if (batterClone) {
+      batterClone.stats.runs += ball.runsScored;
+      if (ball.extraType !== 'wide') batterClone.stats.balls++;
+      if (ball.runsScored === 4) batterClone.stats.fours++;
+      if (ball.runsScored === 6) batterClone.stats.sixes++;
     }
-    if (bowler) {
-      if (ball.extraType !== 'no-ball' && ball.extraType !== 'wide') {
-        // Simplified overs calculation for stats
+    // Update bowler stats
+    if (bowlerClone) {
+      bowlerClone.stats.runsConceded += ball.runsScored + ball.extras;
+      if (ball.isWicket && ball.wicketType !== 'run-out') {
+        bowlerClone.stats.wickets += 1;
       }
-      bowler.stats.runsConceded += (ball.runsScored + (ball.extraType === 'wide' || ball.extraType === 'no-ball' ? 1 : 0));
-      if (ball.isWicket && ball.wicketType !== 'run-out') bowler.stats.wickets++;
     }
 
     // --- 2. Handle Overs ---
@@ -552,10 +682,10 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       if (balls === 5) {
         currentInnings.overs = Math.floor(currentInnings.overs) + 1;
         overCompleted = true;
-        // Update Bowler Overs
-        if (bowler) bowler.stats.oversBowled += 1;
+        if (bowlerClone) bowlerClone.stats.oversBowled = Math.floor(bowlerClone.stats.oversBowled) + 1;
       } else {
         currentInnings.overs += 0.1;
+        if (bowlerClone) bowlerClone.stats.oversBowled += 0.1;
       }
     } else {
       ball.ballInOver = Math.round((currentInnings.overs % 1) * 10);
@@ -566,7 +696,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     // --- 3. Intelligent Strike Rotation ---
     let shouldSwap = false;
     if (ball.runsScored % 2 !== 0) {
-      shouldSwap = !shouldSwap;
+      shouldSwap = true;
     }
 
     if (shouldSwap) {
@@ -593,7 +723,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       };
     }
 
-    // Over Completion Logic (Swap Ends)
+    // Over Completion Logic (Swap Ends + Ask for Bowler)
     if (overCompleted) {
       const temp = currentInnings.strikerId;
       currentInnings.strikerId = currentInnings.nonStrikerId;
@@ -612,23 +742,54 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     const isAllOut = currentInnings.wickets >= 10;
     const isOversDone = currentInnings.overs >= match.totalOvers;
 
-    if (isAllOut || isOversDone) {
+    // Check if target is chased (2nd innings only)
+    const isTargetReached = match.innings2 && match.innings1 &&
+      match.innings2.totalRuns > match.innings1.totalRuns;
+
+    if (isAllOut || isOversDone || isTargetReached) {
       if (!match.innings2 && !match.winnerId) {
+        // First innings ended - go to innings break
         match.status = 'innings_break';
         match.playStatus = 'active';
       } else {
+        // Second innings OR target reached - end match
         endMatchLogic(match);
       }
     }
 
     const updatedMatches = [...data.matches];
     updatedMatches[matchIndex] = match;
-    setData({ ...data, matches: updatedMatches });
+
+    // Also update team stats in state
+    const updatedTeams = data.teams.map(team => {
+      if (team.id === battingTeam?.id) {
+        return {
+          ...team,
+          players: team.players.map(p => {
+            if (p.id === batterClone?.id) return batterClone;
+            return p;
+          })
+        };
+      }
+      if (team.id === bowlingTeam?.id) {
+        return {
+          ...team,
+          players: team.players.map(p => {
+            if (p.id === bowlerClone?.id) return bowlerClone;
+            return p;
+          })
+        };
+      }
+      return team;
+    });
+
+    // Skip realtime refetch for 3 seconds to prevent overwriting local changes
+    skipRealtimeFor(3000);
+
+    setData({ ...data, matches: updatedMatches, teams: updatedTeams });
     setActiveMatch(match);
 
     if (isSupabaseEnabled) {
-      // Update Match (Innings)
-      // Update Match (Innings)
       supabase!.from('matches').update({
         innings1: match.innings1,
         innings2: match.innings2,
@@ -640,124 +801,16 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         if (error) console.error('Error updating match score in Supabase:', error);
       });
 
-      // Update Stats (Teams/Players)
-      if (batter) {
-        supabase!.from('players').update({ stats: batter.stats }).eq('id', batter.id).then(({ error }) => {
+      if (batterClone) {
+        supabase!.from('players').update({ stats: batterClone.stats }).eq('id', batterClone.id).then(({ error }) => {
           if (error) console.error('Error updating batter stats:', error);
         });
       }
-      if (bowler) {
-        supabase!.from('players').update({ stats: bowler.stats }).eq('id', bowler.id).then(({ error }) => {
+      if (bowlerClone) {
+        supabase!.from('players').update({ stats: bowlerClone.stats }).eq('id', bowlerClone.id).then(({ error }) => {
           if (error) console.error('Error updating bowler stats:', error);
         });
       }
-    }
-  };
-
-  const endMatchLogic = (match: Match) => {
-    match.status = 'completed';
-    const score1 = match.innings1!.totalRuns;
-    const score2 = match.innings2 ? match.innings2.totalRuns : 0;
-
-    if (match.innings2) {
-      if (score1 > score2) {
-        match.winnerId = match.innings1!.battingTeamId;
-        match.resultMessage = `${getTeamName(match.innings1!.battingTeamId, data.teams)} won by ${score1 - score2} runs`;
-      } else if (score2 > score1) {
-        match.winnerId = match.innings2.battingTeamId;
-        match.resultMessage = `${getTeamName(match.innings2.battingTeamId, data.teams)} won by ${10 - match.innings2.wickets} wickets`;
-      } else {
-        match.winnerId = undefined;
-        match.resultMessage = "Match Tied";
-      }
-    }
-    updateTeamStats(match);
-  };
-
-  const getTeamName = (id: string, allTeams: Team[]) => allTeams.find(t => t.id === id)?.name || 'Unknown';
-
-  const updateTeamStats = (match: Match) => {
-    if (!match.innings2) return;
-    const t1 = match.innings1!.battingTeamId;
-    const t2 = match.innings2.battingTeamId;
-    const team1 = data.teams.find(t => t.id === t1);
-    const team2 = data.teams.find(t => t.id === t2);
-    if (!team1 || !team2) return;
-    team1.stats.played++;
-    team2.stats.played++;
-    const isGroupStage = match.groupStage;
-    const isSemiFinal = match.knockoutStage === 'SF1' || match.knockoutStage === 'SF2';
-    const isFinal = match.knockoutStage === 'FINAL';
-
-    if (match.winnerId === t1) {
-      team1.stats.won++;
-      team2.stats.lost++;
-
-      if (isGroupStage) {
-        team1.stats.points += 10;
-        // Loser in group stage gets 0
-      } else if (isSemiFinal) {
-        team1.stats.points += 8;
-        team2.stats.points += 3; // Loser gets 3 in SF
-      } else if (isFinal) {
-        team1.stats.points += 10;
-        team2.stats.points += 6; // Runner up gets 6
-      }
-    } else if (match.winnerId === t2) {
-      team2.stats.won++;
-      team1.stats.lost++;
-
-      if (isGroupStage) {
-        team2.stats.points += 10;
-      } else if (isSemiFinal) {
-        team2.stats.points += 8;
-        team1.stats.points += 3;
-      } else if (isFinal) {
-        team2.stats.points += 10;
-        team1.stats.points += 6;
-      }
-    } else {
-      // Tie / No Result
-      team1.stats.tie++;
-      team2.stats.tie++;
-
-      if (isGroupStage) {
-        team1.stats.points += 5;
-        team2.stats.points += 5;
-      } else {
-        // Tie in Knockouts (Usually Super Over, but if simply ended as Tie)
-        // User said "if no result then both team gets 5 points" generally for Cricket
-        // Assuming this applies to Group Stage mainly, but let's apply 5 for now if tie happens elsewhere or default
-        team1.stats.points += 5;
-        team2.stats.points += 5;
-      }
-    }
-    team1.stats.totalRunsScored += match.innings1!.totalRuns;
-    team2.stats.totalRunsConceded += match.innings1!.totalRuns;
-    const t1Overs = match.innings1!.wickets >= 10 ? match.totalOvers : match.innings1!.overs;
-    team1.stats.totalOversFaced = addOvers(team1.stats.totalOversFaced, t1Overs);
-    team2.stats.totalOversBowled = addOvers(team2.stats.totalOversBowled, t1Overs);
-    team2.stats.totalRunsScored += match.innings2.totalRuns;
-    team1.stats.totalRunsConceded += match.innings2.totalRuns;
-    const t2Overs = match.innings2.wickets >= 10 ? match.totalOvers : match.innings2.overs;
-    team2.stats.totalOversFaced = addOvers(team2.stats.totalOversFaced, t2Overs);
-    team1.stats.totalOversBowled = addOvers(team1.stats.totalOversBowled, t2Overs);
-    team1.stats.nrr = calculateNRR(team1);
-    team2.stats.nrr = calculateNRR(team2);
-    const newTeams = data.teams.map(t => {
-      if (t.id === t1) return team1;
-      if (t.id === t2) return team2;
-      return t;
-    });
-    setData(prev => ({ ...prev, teams: newTeams }));
-
-    if (isSupabaseEnabled) {
-      supabase!.from('teams').upsert([
-        { id: team1.id, name: team1.name, group: team1.group, stats: team1.stats },
-        { id: team2.id, name: team2.name, group: team2.group, stats: team2.stats }
-      ]).then(({ error }) => {
-        if (error) console.error('Error updating team stats in Supabase:', error);
-      });
     }
   };
 
@@ -789,6 +842,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
 
     const updatedMatches = [...data.matches];
     updatedMatches[matchIndex] = match;
+    skipRealtimeFor(3000);
     setData({ ...data, matches: updatedMatches });
     setActiveMatch(match);
 
@@ -903,6 +957,69 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     }
 
     localStorage.removeItem('oizom_cricket_data');
+    window.location.reload();
+  };
+
+  const resetMatchesOnly = async () => {
+    if (!confirm('Reset all matches and player stats? Teams and players will be kept.')) {
+      return;
+    }
+
+    // Reset player stats AND knock game stats
+    const resetTeams = data.teams.map(team => ({
+      ...team,
+      stats: {
+        played: 0, won: 0, lost: 0, tie: 0, points: 0, nrr: 0,
+        totalRunsScored: 0, totalOversFaced: 0, totalRunsConceded: 0, totalOversBowled: 0
+      },
+      badmintonStats: { played: 0, won: 0, lost: 0, points: 0 },
+      tableTennisStats: { played: 0, won: 0, lost: 0, points: 0 },
+      chessStats: { played: 0, won: 0, lost: 0, points: 0 },
+      carromStats: { played: 0, won: 0, lost: 0, points: 0 },
+      players: team.players.map(p => ({
+        ...p,
+        stats: { runs: 0, balls: 0, wickets: 0, oversBowled: 0, runsConceded: 0, fours: 0, sixes: 0 }
+      }))
+    }));
+
+    const newData = { ...data, teams: resetTeams, matches: [], knockoutMatches: [] };
+
+    // Skip realtime refetch to prevent overwriting
+    skipRealtimeFor(5000);
+
+    // Update state
+    setData(newData);
+    setActiveMatch(null);
+
+    // Explicitly save to localStorage
+    localStorage.setItem('oizom_cricket_data', JSON.stringify(newData));
+
+    // Clear from Supabase
+    if (isSupabaseEnabled) {
+      try {
+        await supabase!.from('matches').delete().neq('id', '');
+        await supabase!.from('knockout_matches').delete().neq('id', '');
+
+        // Reset player and team stats in Supabase
+        for (const team of resetTeams) {
+          await supabase!.from('teams').update({
+            stats: team.stats,
+            badminton_stats: team.badmintonStats,
+            table_tennis_stats: team.tableTennisStats,
+            chess_stats: team.chessStats,
+            carrom_stats: team.carromStats
+          }).eq('id', team.id);
+
+          for (const player of team.players) {
+            await supabase!.from('players').update({ stats: player.stats }).eq('id', player.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error resetting Supabase data:', error);
+      }
+    }
+
+    // Force refresh to ensure UI updates
     window.location.reload();
   };
 
@@ -1076,7 +1193,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       isAdmin, login, logout,
       teams: data.teams, matches: data.matches, activeMatch,
       addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, createMatch, updateMatchToss, startInnings, setNextBowler,
-      recordBall, undoLastBall, endMatch, abandonMatch, resetTournament, generateKnockouts,
+      recordBall, undoLastBall, endMatch, abandonMatch, resetTournament, resetMatchesOnly, generateKnockouts,
       // Knockout
       activeGame, setActiveGame, knockoutMatches: data.knockoutMatches || [], createKnockoutMatch, resolveKnockoutMatch
     }}>

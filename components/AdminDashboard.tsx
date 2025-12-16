@@ -94,40 +94,124 @@ const LoginScreen = ({ pin, setPin, login }: { pin: string, setPin: (p: string) 
 // ============================================
 // CRICKET MATCH CONTROL
 // ============================================
-const CricketMatchControl = ({ navigate, resetTournament }: { navigate: any, resetTournament: () => void }) => (
-    <div className="space-y-8">
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl p-6 md:p-12 text-center border border-cricket-border shadow-card relative overflow-hidden group"
-        >
-            <div className="absolute inset-0 bg-gradient-to-br from-cricket-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
-            <div className="absolute inset-0 bg-mesh-cricket opacity-50" />
+const CricketMatchControl = ({ navigate, resetTournament, resetMatchesOnly, matches, teams, activeMatch }: { navigate: any, resetTournament: () => void, resetMatchesOnly: () => void, matches: any[], teams: any[], activeMatch: any }) => {
+    // Group matches by status
+    const liveMatches = matches.filter(m => m.status === 'live' || m.status === 'innings_break');
+    const scheduledMatches = matches.filter(m => m.status === 'toss' || m.status === 'scheduled');
+    const completedMatches = matches.filter(m => m.status === 'completed').slice(-5).reverse();
 
-            <div className="relative z-10">
-                <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-green-50 text-green-600 mb-8">
-                    <PlayCircle size={48} />
-                </div>
-                <h2 className="text-4xl font-display font-bold text-slate-800 mb-4 uppercase">Cricket Match</h2>
-                <motion.button
-                    onClick={() => navigate('/setup')}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="btn-primary text-xl inline-flex items-center gap-4"
+    const getTeamName = (id: string) => teams.find((t: any) => t.id === id)?.name || 'Unknown';
+
+    return (
+        <div className="space-y-8">
+            {/* Active Match Alert */}
+            {activeMatch && (activeMatch.status === 'live' || activeMatch.status === 'innings_break') && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-gradient-to-r from-cricket-primary to-cricket-primaryLight rounded-3xl p-6 text-white shadow-glow-green"
                 >
-                    Start Match <ChevronRight size={24} />
-                </motion.button>
-            </div>
-        </motion.div>
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <div className="text-sm font-bold uppercase tracking-wider opacity-80 mb-1">Match In Progress</div>
+                            <div className="text-2xl font-display font-black">
+                                {getTeamName(activeMatch.teamAId)} vs {getTeamName(activeMatch.teamBId)}
+                            </div>
+                            <div className="text-sm opacity-80 mt-1">
+                                {activeMatch.innings1 && `${activeMatch.innings1.totalRuns}/${activeMatch.innings1.wickets} (${activeMatch.innings1.overs} ov)`}
+                                {activeMatch.innings2 && ` • ${activeMatch.innings2.totalRuns}/${activeMatch.innings2.wickets} (${activeMatch.innings2.overs} ov)`}
+                            </div>
+                        </div>
+                        <motion.button
+                            onClick={() => navigate('/scorer')}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-6 py-3 bg-white text-cricket-primary font-bold uppercase tracking-wider rounded-xl shadow-lg flex items-center gap-2"
+                        >
+                            <PlayCircle size={20} />
+                            Continue Scoring
+                        </motion.button>
+                    </div>
+                </motion.div>
+            )}
 
-        {/* Reset Button (Keep existing danger zone here or shared?) Keeping here for now */}
-        <div className="p-6 rounded-2xl border-2 border-red-100 bg-red-50">
-            <button onClick={resetTournament} className="text-red-500 font-bold uppercase text-xs flex items-center gap-2">
-                <RefreshCw size={14} /> Reset Tournament
-            </button>
+            {/* Start New Match */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-3xl p-6 md:p-12 text-center border border-cricket-border shadow-card relative overflow-hidden group"
+            >
+                <div className="absolute inset-0 bg-gradient-to-br from-cricket-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                <div className="absolute inset-0 bg-mesh-cricket opacity-50" />
+
+                <div className="relative z-10">
+                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-green-50 text-green-600 mb-8">
+                        <Plus size={48} />
+                    </div>
+                    <h2 className="text-4xl font-display font-bold text-slate-800 mb-4 uppercase">New Cricket Match</h2>
+                    <motion.button
+                        onClick={() => navigate('/setup')}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="btn-primary text-xl inline-flex items-center gap-4"
+                    >
+                        Start Match <ChevronRight size={24} />
+                    </motion.button>
+                </div>
+            </motion.div>
+
+            {/* Pending/Scheduled Matches */}
+            {scheduledMatches.length > 0 && (
+                <div className="bg-white rounded-2xl p-6 border border-cricket-border shadow-card">
+                    <h3 className="font-bold text-xs uppercase tracking-widest text-cricket-textMuted mb-4">Pending Toss / Scheduled</h3>
+                    <div className="space-y-3">
+                        {scheduledMatches.map((match: any) => (
+                            <div key={match.id} className="flex justify-between items-center p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                                <div>
+                                    <div className="font-bold text-cricket-textPrimary">
+                                        {getTeamName(match.teamAId)} vs {getTeamName(match.teamBId)}
+                                    </div>
+                                    <div className="text-xs text-cricket-textMuted uppercase">{match.totalOvers} Overs • {match.status}</div>
+                                </div>
+                                <button
+                                    onClick={() => navigate('/setup')}
+                                    className="px-4 py-2 bg-yellow-500 text-white font-bold text-xs uppercase rounded-lg hover:bg-yellow-600"
+                                >
+                                    Continue Setup
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Recent Completed */}
+            {completedMatches.length > 0 && (
+                <div className="bg-white rounded-2xl p-6 border border-cricket-border shadow-card opacity-70">
+                    <h3 className="font-bold text-xs uppercase tracking-widest text-cricket-textMuted mb-4">Recent Results</h3>
+                    <div className="space-y-2">
+                        {completedMatches.map((match: any) => (
+                            <div key={match.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl text-sm">
+                                <span>{getTeamName(match.teamAId)} vs {getTeamName(match.teamBId)}</span>
+                                <span className="font-bold text-cricket-primary">{match.resultMessage || 'Completed'}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Reset Buttons */}
+            <div className="p-6 rounded-2xl border-2 border-orange-100 bg-orange-50 flex flex-wrap gap-4">
+                <button onClick={resetMatchesOnly} className="text-orange-600 font-bold uppercase text-xs flex items-center gap-2 bg-orange-100 px-4 py-2 rounded-lg hover:bg-orange-200 transition-colors">
+                    <RefreshCw size={14} /> Reset Matches Only
+                </button>
+                <button onClick={resetTournament} className="text-red-500 font-bold uppercase text-xs flex items-center gap-2 bg-red-100 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors">
+                    <AlertTriangle size={14} /> Reset Everything
+                </button>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // ============================================
 // BADMINTON MATCH CONTROL
@@ -471,7 +555,7 @@ const TeamManagementSection = ({
 // MAIN ADMIN DASHBOARD
 // ============================================
 const AdminDashboard = () => {
-    const { isAdmin, login, logout, teams, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, resetTournament } = useTournament();
+    const { isAdmin, login, logout, teams, matches, activeMatch, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, resetTournament, resetMatchesOnly, knockoutMatches, resolveKnockoutMatch, setActiveGame } = useTournament();
     const navigate = useNavigate();
     const [pin, setPin] = useState('');
     const [activeTab, setActiveTab] = useState<'match' | 'teams'>('match');
@@ -485,7 +569,6 @@ const AdminDashboard = () => {
 
     // Game Selection
     const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
-    const { knockoutMatches, resolveKnockoutMatch, setActiveGame } = useTournament();
 
     if (!isAdmin) {
         return <LoginScreen pin={pin} setPin={setPin} login={login} />;
@@ -553,7 +636,7 @@ const AdminDashboard = () => {
                         transition={{ duration: 0.3 }}
                     >
                         {activeTab === 'match' && selectedGame === 'cricket' && (
-                            <CricketMatchControl navigate={navigate} resetTournament={resetTournament} />
+                            <CricketMatchControl navigate={navigate} resetTournament={resetTournament} resetMatchesOnly={resetMatchesOnly} matches={matches} teams={teams} activeMatch={activeMatch} />
                         )}
 
                         {activeTab === 'match' && selectedGame && selectedGame !== 'cricket' && (

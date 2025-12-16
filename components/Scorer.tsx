@@ -264,17 +264,26 @@ const Scorer = () => {
 
     useEffect(() => {
         if (!activeMatch) navigate('/');
-    }, [activeMatch, navigate]);
+        // Redirect to setup when innings break - need to select batters/bowler for 2nd innings
+        if (activeMatch?.status === 'innings_break') {
+            navigate('/setup');
+        }
+        // Redirect to home when match is completed
+        if (activeMatch?.status === 'completed') {
+            navigate('/');
+        }
+    }, [activeMatch, activeMatch?.status, navigate]);
 
     if (!activeMatch) return null;
 
     const currentInnings = activeMatch.innings2 || activeMatch.innings1;
 
+    // Show a waiting state if innings hasn't started yet
     if (!currentInnings) {
         return (
             <div className="h-screen bg-cricket-bg flex items-center justify-center">
                 <motion.div
-                    className="text-center"
+                    className="text-center p-8"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                 >
@@ -283,7 +292,8 @@ const Scorer = () => {
                         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                         className="w-16 h-16 border-4 border-cricket-primary/20 border-t-cricket-primary rounded-full mx-auto mb-6"
                     />
-                    <p className="text-cricket-textPrimary font-display text-xl uppercase tracking-widest">Loading Match...</p>
+                    <p className="text-cricket-textPrimary font-display text-xl uppercase tracking-widest mb-2">Waiting for Match to Start</p>
+                    <p className="text-cricket-textMuted text-sm">Please complete the toss and select the playing XI</p>
                 </motion.div>
             </div>
         );
@@ -486,8 +496,8 @@ const Scorer = () => {
                     <button
                         onClick={() => setActiveView('commentary')}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeView === 'commentary'
-                                ? 'text-cricket-primary border-b-2 border-cricket-primary bg-cricket-primary/5'
-                                : 'text-cricket-textMuted hover:text-cricket-textSecondary'
+                            ? 'text-cricket-primary border-b-2 border-cricket-primary bg-cricket-primary/5'
+                            : 'text-cricket-textMuted hover:text-cricket-textSecondary'
                             }`}
                     >
                         <Radio size={14} />
@@ -496,8 +506,8 @@ const Scorer = () => {
                     <button
                         onClick={() => setActiveView('bowling')}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeView === 'bowling'
-                                ? 'text-cricket-secondary border-b-2 border-cricket-secondary bg-cricket-secondary/5'
-                                : 'text-cricket-textMuted hover:text-cricket-textSecondary'
+                            ? 'text-cricket-secondary border-b-2 border-cricket-secondary bg-cricket-secondary/5'
+                            : 'text-cricket-textMuted hover:text-cricket-textSecondary'
                             }`}
                     >
                         <BarChart2 size={14} />
@@ -553,22 +563,45 @@ const Scorer = () => {
                     transition={{ type: "spring", stiffness: 200, damping: 25 }}
                     className="flex-none bg-white border-t border-cricket-border p-4 pb-8 safe-area-pb"
                 >
-                    <div className="grid grid-cols-4 gap-3">
-                        {/* Row 1 */}
-                        <ScoreButton value={0} variant="default" onClick={() => handleScore(0)} />
-                        <ScoreButton value={1} variant="default" onClick={() => handleScore(1)} />
-                        <ScoreButton value={2} variant="default" onClick={() => handleScore(2)} />
-                        <ScoreButton value={4} variant="boundary" onClick={() => handleScore(4)} />
+                    <div className="space-y-3">
+                        {/* Main Scoring Grid */}
+                        <div className="grid grid-cols-4 gap-3">
+                            {/* Row 1 */}
+                            <ScoreButton value={0} variant="default" onClick={() => handleScore(0)} />
+                            <ScoreButton value={1} variant="default" onClick={() => handleScore(1)} />
+                            <ScoreButton value={2} variant="default" onClick={() => handleScore(2)} />
+                            <ScoreButton value={4} variant="boundary" onClick={() => handleScore(4)} />
 
-                        {/* Row 2 */}
-                        <ScoreButton label="WD" variant="extra" onClick={() => handleExtra('wide')} />
-                        <ScoreButton value={3} variant="default" onClick={() => handleScore(3)} />
-                        <ScoreButton label="NB" variant="extra" onClick={() => handleExtra('no-ball')} />
-                        <ScoreButton value={6} variant="six" onClick={() => handleScore(6)} />
+                            {/* Row 2 */}
+                            <ScoreButton label="WD" variant="extra" onClick={() => handleExtra('wide')} />
+                            <ScoreButton value={3} variant="default" onClick={() => handleScore(3)} />
+                            <ScoreButton label="NB" variant="extra" onClick={() => handleExtra('no-ball')} />
+                            <ScoreButton value={6} variant="six" onClick={() => handleScore(6)} />
 
-                        {/* Row 3 */}
-                        <ScoreButton label="↩ UNDO" span={2} variant="action" onClick={() => undoLastBall(activeMatch.id)} />
-                        <ScoreButton label="OUT" span={2} variant="wicket" onClick={() => setShowWicketModal(true)} />
+                            {/* Row 3 */}
+                            <ScoreButton label="OUT" span={4} variant="wicket" onClick={() => setShowWicketModal(true)} />
+                        </div>
+
+                        {/* Undo Button - Separate and Prominent */}
+                        <motion.button
+                            onClick={() => undoLastBall(activeMatch.id)}
+                            disabled={!currentInnings || currentInnings.history.length === 0}
+                            whileTap={{ scale: 0.95 }}
+                            className={`w-full py-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${currentInnings && currentInnings.history.length > 0
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl'
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                }`}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            </svg>
+                            Undo Last Ball
+                            {currentInnings && currentInnings.history.length > 0 && (
+                                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                                    {currentInnings.history.length}
+                                </span>
+                            )}
+                        </motion.button>
                     </div>
                 </motion.div>
             ) : (
@@ -593,24 +626,56 @@ const Scorer = () => {
                             exit={{ scale: 0.9, y: 50 }}
                             className="w-full max-w-md bg-white rounded-3xl p-8 shadow-premium"
                         >
-                            <h2 className="text-3xl font-display font-bold text-cricket-textPrimary text-center mb-8 uppercase tracking-wide">
+                            <h2 className="text-3xl font-display font-bold text-cricket-textPrimary text-center mb-2 uppercase tracking-wide">
                                 Select Bowler
                             </h2>
+                            <p className="text-sm text-cricket-textMuted text-center mb-6">Max 2 overs per bowler</p>
                             <div className="grid gap-3 max-h-[60vh] overflow-y-auto pr-2">
-                                {bowlingTeam?.players.filter(p => p.id !== currentInnings.currentBowlerId).map(p => (
-                                    <motion.button
-                                        whileHover={{ scale: 1.02, x: 4 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        key={p.id}
-                                        onClick={() => setNextBowler(activeMatch.id, p.id)}
-                                        className="p-5 bg-white border-2 border-cricket-border rounded-2xl text-left font-bold hover:border-cricket-secondary transition-all"
-                                    >
-                                        <div className="text-cricket-textPrimary text-lg">{p.name}</div>
-                                        <div className="text-xs text-cricket-textMuted mt-1 font-mono">
-                                            {p.stats.wickets}-{p.stats.runsConceded} ({formatOvers(p.stats.oversBowled)} ov)
-                                        </div>
-                                    </motion.button>
-                                ))}
+                                {bowlingTeam?.players
+                                    .filter(p => p.id !== currentInnings.currentBowlerId)
+                                    .map(p => {
+                                        // Calculate overs bowled in THIS innings from history
+                                        const ballsBowled = currentInnings.history.filter(
+                                            ball => ball.bowlerId === p.id && ball.isValidBall
+                                        ).length;
+                                        const oversInThisInnings = Math.floor(ballsBowled / 6);
+                                        const ballsInCurrentOver = ballsBowled % 6;
+                                        const isLocked = oversInThisInnings >= 2;
+
+                                        return (
+                                            <motion.button
+                                                whileHover={!isLocked ? { scale: 1.02, x: 4 } : {}}
+                                                whileTap={!isLocked ? { scale: 0.98 } : {}}
+                                                key={p.id}
+                                                onClick={() => !isLocked && setNextBowler(activeMatch.id, p.id)}
+                                                disabled={isLocked}
+                                                className={`p-5 border-2 rounded-2xl text-left font-bold transition-all ${isLocked
+                                                    ? 'bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed'
+                                                    : 'bg-white border-cricket-border hover:border-cricket-secondary'
+                                                    }`}
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <div className={`text-lg ${isLocked ? 'text-gray-400' : 'text-cricket-textPrimary'}`}>
+                                                            {p.name}
+                                                        </div>
+                                                        <div className="text-xs text-cricket-textMuted mt-1 font-mono">
+                                                            {oversInThisInnings}.{ballsInCurrentOver} ov bowled this match
+                                                        </div>
+                                                    </div>
+                                                    {isLocked ? (
+                                                        <span className="text-xs font-bold px-2 py-1 rounded bg-red-100 text-red-500 uppercase">
+                                                            Quota Done
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs font-mono px-2 py-1 rounded bg-cricket-primary/10 text-cricket-primary">
+                                                            {2 - oversInThisInnings} ov left
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </motion.button>
+                                        );
+                                    })}
                             </div>
                         </motion.div>
                     </motion.div>

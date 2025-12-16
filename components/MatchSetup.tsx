@@ -212,9 +212,20 @@ const MatchSetup = () => {
     const [tossChoice, setTossChoice] = useState<'bat' | 'bowl' | ''>('');
     const [lineup1, setLineup1] = useState<string[]>([]);
     const [lineup2, setLineup2] = useState<string[]>([]);
+    const [striker, setStriker] = useState('');
+    const [nonStriker, setNonStriker] = useState('');
+    const [openingBowler, setOpeningBowler] = useState('');
 
     // Determine current step
     const step = !activeMatch ? 1 : activeMatch.status === 'toss' ? 2 : activeMatch.status === 'scheduled' || activeMatch.status === 'innings_break' ? 3 : 4;
+
+    // Auto-redirect to scorer when match is live (step 4)
+    React.useEffect(() => {
+        if (step === 4 && activeMatch) {
+            const timer = setTimeout(() => navigate('/scorer'), 100);
+            return () => clearTimeout(timer);
+        }
+    }, [step, activeMatch, navigate]);
 
     // Handlers
     const handleCreate = () => {
@@ -230,9 +241,9 @@ const MatchSetup = () => {
     };
 
     const handleLineup = () => {
-        if (activeMatch && lineup1.length >= 2 && lineup2.length >= 2) {
-            // Start innings with striker, non-striker, and opening bowler
-            startInnings(activeMatch.id, lineup1[0], lineup1[1], lineup2[0]);
+        if (activeMatch && striker && nonStriker && openingBowler) {
+            // Start innings with selected striker, non-striker, and opening bowler
+            startInnings(activeMatch.id, striker, nonStriker, openingBowler);
         }
     };
 
@@ -410,60 +421,168 @@ const MatchSetup = () => {
         const team1 = teams.find(t => t.id === activeMatch.teamAId);
         const team2 = teams.find(t => t.id === activeMatch.teamBId);
 
+        // Determine batting and bowling teams
+        // For first innings: based on toss
+        // For second innings (innings_break): swap from first innings
+        const isSecondInnings = activeMatch.status === 'innings_break' && activeMatch.innings1;
+
+        let battingTeam, bowlingTeam;
+
+        if (isSecondInnings && activeMatch.innings1) {
+            // Second innings: swap teams from first innings
+            battingTeam = teams.find(t => t.id === activeMatch.innings1!.bowlingTeamId);
+            bowlingTeam = teams.find(t => t.id === activeMatch.innings1!.battingTeamId);
+        } else {
+            // First innings: based on toss
+            const isBattingFirst = (activeMatch.toss?.winnerId === team1?.id && activeMatch.toss?.choice === 'bat') ||
+                (activeMatch.toss?.winnerId === team2?.id && activeMatch.toss?.choice === 'bowl');
+            battingTeam = isBattingFirst ? team1 : team2;
+            bowlingTeam = isBattingFirst ? team2 : team1;
+        }
+
+        const battingLineup = battingTeam?.id === team1?.id ? lineup1 : lineup2;
+        const bowlingLineup = battingTeam?.id === team1?.id ? lineup2 : lineup1;
+        const setBattingLineup = battingTeam?.id === team1?.id ? setLineup1 : setLineup2;
+        const setBowlingLineup = battingTeam?.id === team1?.id ? setLineup2 : setLineup1;
+
         const togglePlayer = (list: string[], setter: any, id: string) => {
             setter(list.includes(id) ? list.filter(p => p !== id) : [...list, id]);
         };
 
+        const toggleSelectAll = (teamPlayers: any[], currentLineup: string[], setter: any) => {
+            if (!teamPlayers) return;
+            const allIds = teamPlayers.map(p => p.id);
+            const isAllSelected = allIds.every(id => currentLineup.includes(id));
+            setter(isAllSelected ? [] : allIds);
+        };
+
         return (
-            <WizardWrapper step={3} totalSteps={3} title="Playing XI" subtitle="Select at least 2 players from each team">
+            <WizardWrapper
+                step={3}
+                totalSteps={3}
+                title={isSecondInnings ? "Second Innings" : "Playing XI & Opening"}
+                subtitle={isSecondInnings ? `${battingTeam?.name} now batting` : "Select players and choose who opens"}
+            >
                 <div className="space-y-8 max-h-[60vh] overflow-y-auto pr-2">
-                    {/* Team 1 Lineup */}
+                    {/* Batting Team Lineup */}
                     <div>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-3 h-3 rounded-full bg-cricket-primary" />
-                            <span className="font-display text-lg font-bold text-cricket-textPrimary uppercase tracking-wide">{team1?.name}</span>
+                            <span className="font-display text-lg font-bold text-cricket-textPrimary uppercase tracking-wide">{battingTeam?.name}</span>
+                            <span className="text-xs font-bold px-2 py-1 rounded bg-cricket-primary/10 text-cricket-primary uppercase">Batting</span>
                             <span className="text-xs font-mono text-cricket-textMuted bg-cricket-bgAlt px-2 py-1 rounded-lg border border-cricket-border">
-                                {lineup1.length} selected
+                                {battingLineup.length} selected
                             </span>
+                            <button
+                                onClick={() => toggleSelectAll(battingTeam?.players || [], battingLineup, setBattingLineup)}
+                                className="ml-auto text-xs font-bold uppercase tracking-wider text-cricket-primary hover:text-cricket-textPrimary transition-colors"
+                            >
+                                {battingLineup.length === (battingTeam?.players?.length || 0) && (battingTeam?.players?.length || 0) > 0 ? 'Deselect All' : 'Select All'}
+                            </button>
                         </div>
-                        <div className="grid md:grid-cols-2 gap-2">
-                            {team1?.players.map(p => (
+                        <div className="grid md:grid-cols-2 gap-2 mb-4">
+                            {battingTeam?.players.map(p => (
                                 <PlayerCheckButton
                                     key={p.id}
                                     player={p}
-                                    checked={lineup1.includes(p.id)}
-                                    onClick={() => togglePlayer(lineup1, setLineup1, p.id)}
+                                    checked={battingLineup.includes(p.id)}
+                                    onClick={() => togglePlayer(battingLineup, setBattingLineup, p.id)}
                                 />
                             ))}
                         </div>
+
+                        {/* Opening Batters Selection */}
+                        {battingLineup.length >= 2 && (
+                            <div className="grid md:grid-cols-2 gap-4 mt-4 p-4 bg-cricket-primary/5 rounded-xl border border-cricket-primary/20">
+                                <div>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-cricket-textMuted mb-2 block flex items-center gap-2">
+                                        <Target size={14} className="text-cricket-primary" />
+                                        Striker (On Strike)
+                                    </label>
+                                    <select
+                                        value={striker}
+                                        onChange={e => setStriker(e.target.value)}
+                                        className="select-cricket"
+                                    >
+                                        <option value="">Select Striker...</option>
+                                        {battingTeam?.players.filter(p => battingLineup.includes(p.id)).map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-cricket-textMuted mb-2 block flex items-center gap-2">
+                                        <Shield size={14} className="text-cricket-secondary" />
+                                        Non-Striker
+                                    </label>
+                                    <select
+                                        value={nonStriker}
+                                        onChange={e => setNonStriker(e.target.value)}
+                                        className="select-cricket"
+                                    >
+                                        <option value="">Select Non-Striker...</option>
+                                        {battingTeam?.players.filter(p => battingLineup.includes(p.id) && p.id !== striker).map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Team 2 Lineup */}
+                    {/* Bowling Team Lineup */}
                     <div>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-3 h-3 rounded-full bg-cricket-secondary" />
-                            <span className="font-display text-lg font-bold text-cricket-textPrimary uppercase tracking-wide">{team2?.name}</span>
+                            <span className="font-display text-lg font-bold text-cricket-textPrimary uppercase tracking-wide">{bowlingTeam?.name}</span>
+                            <span className="text-xs font-bold px-2 py-1 rounded bg-cricket-secondary/10 text-cricket-secondary uppercase">Bowling</span>
                             <span className="text-xs font-mono text-cricket-textMuted bg-cricket-bgAlt px-2 py-1 rounded-lg border border-cricket-border">
-                                {lineup2.length} selected
+                                {bowlingLineup.length} selected
                             </span>
+                            <button
+                                onClick={() => toggleSelectAll(bowlingTeam?.players || [], bowlingLineup, setBowlingLineup)}
+                                className="ml-auto text-xs font-bold uppercase tracking-wider text-cricket-secondary hover:text-cricket-textPrimary transition-colors"
+                            >
+                                {bowlingLineup.length === (bowlingTeam?.players?.length || 0) && (bowlingTeam?.players?.length || 0) > 0 ? 'Deselect All' : 'Select All'}
+                            </button>
                         </div>
-                        <div className="grid md:grid-cols-2 gap-2">
-                            {team2?.players.map(p => (
+                        <div className="grid md:grid-cols-2 gap-2 mb-4">
+                            {bowlingTeam?.players.map(p => (
                                 <PlayerCheckButton
                                     key={p.id}
                                     player={p}
-                                    checked={lineup2.includes(p.id)}
-                                    onClick={() => togglePlayer(lineup2, setLineup2, p.id)}
+                                    checked={bowlingLineup.includes(p.id)}
+                                    onClick={() => togglePlayer(bowlingLineup, setBowlingLineup, p.id)}
                                 />
                             ))}
                         </div>
+
+                        {/* Opening Bowler Selection */}
+                        {bowlingLineup.length >= 1 && (
+                            <div className="p-4 bg-cricket-secondary/5 rounded-xl border border-cricket-secondary/20">
+                                <label className="text-xs font-bold uppercase tracking-wider text-cricket-textMuted mb-2 block flex items-center gap-2">
+                                    <Zap size={14} className="text-cricket-secondary" />
+                                    Opening Bowler
+                                </label>
+                                <select
+                                    value={openingBowler}
+                                    onChange={e => setOpeningBowler(e.target.value)}
+                                    className="select-cricket"
+                                >
+                                    <option value="">Select Opening Bowler...</option>
+                                    {bowlingTeam?.players.filter(p => bowlingLineup.includes(p.id)).map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Start Match Button */}
                 <motion.button
                     onClick={handleLineup}
-                    disabled={lineup1.length < 2 || lineup2.length < 2}
+                    disabled={!striker || !nonStriker || !openingBowler || battingLineup.length < 2 || bowlingLineup.length < 1}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="btn-primary w-full text-lg flex items-center justify-center gap-3 mt-8 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -475,9 +594,28 @@ const MatchSetup = () => {
         );
     }
 
-    // Redirect if already in progress
+    // Step 4: Match Started - Show loading while redirecting
     if (step === 4 && activeMatch) {
-        navigate('/scoring');
+        return (
+            <WizardWrapper step={3} totalSteps={3} title="Match Started!" subtitle="Redirecting to scorer...">
+                <div className="text-center py-8">
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="w-16 h-16 border-4 border-cricket-primary/20 border-t-cricket-primary rounded-full mx-auto mb-6"
+                    />
+                    <p className="text-cricket-textMuted mb-6">Taking you to the scorer...</p>
+                    <motion.button
+                        onClick={() => navigate('/scorer')}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="btn-primary"
+                    >
+                        Go to Scorer Manually
+                    </motion.button>
+                </div>
+            </WizardWrapper>
+        );
     }
 
     return null;
