@@ -822,24 +822,75 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     const inning = match.innings2 || match.innings1;
     if (!inning || inning.history.length === 0) return;
 
-    const lastBall = inning.history.pop();
-    inning.totalRuns -= (lastBall!.runsScored + lastBall!.extras);
-    if (lastBall!.isWicket) inning.wickets--;
+    const lastBall = inning.history.pop()!;
 
-    if (lastBall!.extraType === 'no-ball') {
-      inning.isFreeHit = false;
-    }
+    // --- 1. Reverse Runs ---
+    inning.totalRuns -= (lastBall.runsScored + lastBall.extras);
 
-    if (lastBall!.isValidBall) {
-      const ballPart = Math.round((inning.overs % 1) * 10);
-      if (ballPart === 0) {
-        inning.overs = Math.floor(inning.overs) - 1 + 0.5;
-      } else {
-        inning.overs -= 0.1;
+    // --- 2. Reverse Wicket ---
+    if (lastBall.isWicket && lastBall.wicketPlayerId) {
+      inning.wickets--;
+
+      // Remove from playersOut
+      inning.playersOut = inning.playersOut.filter(id => id !== lastBall.wicketPlayerId);
+
+      // Remove last FOW entry
+      if (inning.fow.length > 0) {
+        inning.fow.pop();
+      }
+
+      // Restore the dismissed batter (they were replaced by the new batter)
+      // The current striker/non-striker who was added after wicket needs to be removed
+      const lastBatterAdded = inning.battingOrder[inning.battingOrder.length - 1];
+
+      if (lastBatterAdded && lastBatterAdded !== lastBall.wicketPlayerId) {
+        // Remove the new batter from batting order
+        inning.battingOrder.pop();
+
+        // Restore dismissed player to their position
+        if (inning.strikerId === lastBatterAdded) {
+          inning.strikerId = lastBall.wicketPlayerId;
+        } else if (inning.nonStrikerId === lastBatterAdded) {
+          inning.nonStrikerId = lastBall.wicketPlayerId;
+        }
       }
     }
 
-    if (match.status === 'completed') match.status = 'live';
+    // --- 3. Reverse Free Hit ---
+    if (lastBall.extraType === 'no-ball') {
+      inning.isFreeHit = false;
+    }
+
+    // --- 4. Reverse Overs ---
+    if (lastBall.isValidBall) {
+      const ballPart = Math.round((inning.overs % 1) * 10);
+      if (ballPart === 0) {
+        // Was at start of new over (e.g., 3.0) -> go back to 2.5
+        inning.overs = Math.floor(inning.overs) - 1 + 0.5;
+        // Also need to reset waiting_for_bowler status and potentially restore previous bowler
+        match.playStatus = 'active';
+      } else {
+        inning.overs = parseFloat((inning.overs - 0.1).toFixed(1));
+      }
+    }
+
+    // --- 5. Reverse Strike Rotation ---
+    // If odd runs were scored, strike was swapped - reverse it
+    if (lastBall.runsScored % 2 !== 0) {
+      const temp = inning.strikerId;
+      inning.strikerId = inning.nonStrikerId;
+      inning.nonStrikerId = temp;
+    }
+
+    // --- 6. Restore match status if needed ---
+    if (match.status === 'completed') {
+      match.status = 'live';
+      match.winnerId = undefined;
+      match.resultMessage = undefined;
+    }
+    if (match.status === 'innings_break' && match.innings1 && !match.innings2) {
+      match.status = 'live';
+    }
 
     const updatedMatches = [...data.matches];
     updatedMatches[matchIndex] = match;
@@ -851,7 +902,10 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       supabase!.from('matches').update({
         innings1: match.innings1,
         innings2: match.innings2,
-        status: match.status
+        status: match.status,
+        play_status: match.playStatus,
+        winner_id: match.winnerId,
+        result_message: match.resultMessage
       }).eq('id', matchId).then(({ error }) => {
         if (error) console.error('Error undoing last ball in Supabase:', error);
       });

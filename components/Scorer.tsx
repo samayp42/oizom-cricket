@@ -260,7 +260,7 @@ const Scorer = () => {
     const [newBatter, setNewBatter] = useState('');
 
     // View Toggle State
-    const [activeView, setActiveView] = useState<'commentary' | 'bowling'>('commentary');
+    const [activeView, setActiveView] = useState<'commentary' | 'bowling' | 'overs'>('commentary');
 
     useEffect(() => {
         if (!activeMatch) navigate('/');
@@ -501,7 +501,17 @@ const Scorer = () => {
                             }`}
                     >
                         <Radio size={14} />
-                        Commentary
+                        Ball
+                    </button>
+                    <button
+                        onClick={() => setActiveView('overs')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeView === 'overs'
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-cricket-textMuted hover:text-cricket-textSecondary'
+                            }`}
+                    >
+                        <Target size={14} />
+                        Overs
                     </button>
                     <button
                         onClick={() => setActiveView('bowling')}
@@ -536,6 +546,88 @@ const Scorer = () => {
                                         <p className="font-display text-xl uppercase tracking-widest">Waiting for first ball...</p>
                                     </div>
                                 )}
+                            </motion.div>
+                        ) : activeView === 'overs' ? (
+                            <motion.div
+                                key="overs"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="absolute inset-0 p-4 overflow-y-auto"
+                            >
+                                {/* Over-by-Over Scorecard */}
+                                <div className="space-y-2">
+                                    {(() => {
+                                        // Group balls by over
+                                        const overMap: { [key: number]: { runs: number; wickets: number; balls: string[] } } = {};
+                                        currentInnings.history.forEach(ball => {
+                                            const overNum = ball.overNumber;
+                                            if (!overMap[overNum]) {
+                                                overMap[overNum] = { runs: 0, wickets: 0, balls: [] };
+                                            }
+                                            const ballRuns = ball.runsScored + ball.extras;
+                                            overMap[overNum].runs += ballRuns;
+                                            if (ball.isWicket) overMap[overNum].wickets++;
+
+                                            // Ball notation
+                                            let notation = '';
+                                            if (ball.isWicket) notation = 'W';
+                                            else if (ball.extraType === 'wide') notation = 'wd';
+                                            else if (ball.extraType === 'no-ball') notation = 'nb';
+                                            else if (ball.runsScored === 4) notation = '4';
+                                            else if (ball.runsScored === 6) notation = '6';
+                                            else notation = String(ball.runsScored);
+
+                                            overMap[overNum].balls.push(notation);
+                                        });
+
+                                        const overs = Object.entries(overMap).sort(([a], [b]) => Number(b) - Number(a));
+
+                                        if (overs.length === 0) {
+                                            return (
+                                                <div className="text-center py-20 text-cricket-textMuted">
+                                                    <Target size={56} className="mx-auto mb-6 opacity-30" />
+                                                    <p className="font-display text-xl uppercase tracking-widest">No overs yet...</p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return overs.map(([overNum, data]) => (
+                                            <div key={overNum} className="bg-white rounded-xl p-3 border border-cricket-border">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-cricket-primary/10 flex items-center justify-center text-cricket-primary font-bold text-sm">
+                                                            {Number(overNum) + 1}
+                                                        </div>
+                                                        <div className="flex gap-1">
+                                                            {data.balls.map((b, i) => (
+                                                                <span
+                                                                    key={i}
+                                                                    className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center ${b === 'W' ? 'bg-red-500 text-white' :
+                                                                            b === '4' ? 'bg-blue-500 text-white' :
+                                                                                b === '6' ? 'bg-purple-500 text-white' :
+                                                                                    b === 'wd' || b === 'nb' ? 'bg-orange-100 text-orange-600' :
+                                                                                        'bg-slate-100 text-slate-600'
+                                                                        }`}
+                                                                >
+                                                                    {b}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-2xl font-bold text-cricket-textPrimary">{data.runs}</span>
+                                                        {data.wickets > 0 && (
+                                                            <span className="text-xs font-bold px-2 py-1 rounded bg-red-100 text-red-600">
+                                                                {data.wickets}W
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
+                                </div>
                             </motion.div>
                         ) : (
                             <motion.div

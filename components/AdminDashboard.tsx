@@ -220,30 +220,19 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteM
     const gameMatches = knockoutMatches.filter((m: any) => m.gameType === gameType);
     const [resultModal, setResultModal] = useState<{ match: any; teamA: any; teamB: any } | null>(null);
     const [selectedWinner, setSelectedWinner] = useState<string>('');
-    const [scoreA, setScoreA] = useState<number>(0);
-    const [scoreB, setScoreB] = useState<number>(0);
 
-    const needsScores = gameType === 'badminton' || gameType === 'table_tennis';
+    // No score entry needed for any game - just winner selection
 
     const openResultModal = (match: any) => {
         const teamA = teams.find((t: any) => t.id === match.teamAId);
         const teamB = teams.find((t: any) => t.id === match.teamBId);
         setResultModal({ match, teamA, teamB });
         setSelectedWinner('');
-        setScoreA(0);
-        setScoreB(0);
     };
 
     const submitResult = () => {
         if (!resultModal || !selectedWinner) return;
-
-        // Build result message
-        let resultMessage = '';
-        if (needsScores) {
-            resultMessage = `${scoreA}-${scoreB}`;
-        }
-
-        resolveMatch(resultModal.match.id, selectedWinner, resultMessage);
+        resolveMatch(resultModal.match.id, selectedWinner);
         setResultModal(null);
     };
 
@@ -398,44 +387,6 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteM
                                     </button>
                                 </div>
                             </div>
-
-                            {/* Score Entry (for badminton/table tennis) */}
-                            {needsScores && selectedWinner && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    className="mb-6"
-                                >
-                                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 block">
-                                        Final Score
-                                    </label>
-                                    <div className="flex items-center justify-center gap-4">
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-xs text-slate-500 mb-2">{resultModal.teamA?.name}</span>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="99"
-                                                value={scoreA}
-                                                onChange={e => setScoreA(parseInt(e.target.value) || 0)}
-                                                className="w-20 h-16 text-3xl font-bold text-center rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
-                                            />
-                                        </div>
-                                        <span className="text-3xl font-bold text-slate-300">-</span>
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-xs text-slate-500 mb-2">{resultModal.teamB?.name}</span>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="99"
-                                                value={scoreB}
-                                                onChange={e => setScoreB(parseInt(e.target.value) || 0)}
-                                                className="w-20 h-16 text-3xl font-bold text-center rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
 
                             {/* Submit Button */}
                             <div className="flex gap-3">
