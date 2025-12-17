@@ -218,10 +218,11 @@ const CricketMatchControl = ({ navigate, resetTournament, resetMatchesOnly, matc
 // ============================================
 const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteMatch, teams, gameType }: any) => {
     const gameMatches = knockoutMatches.filter((m: any) => m.gameType === gameType);
+    const scheduledMatches = gameMatches.filter((m: any) => m.status === 'scheduled');
+    const completedMatches = gameMatches.filter((m: any) => m.status === 'completed');
+
     const [resultModal, setResultModal] = useState<{ match: any; teamA: any; teamB: any } | null>(null);
     const [selectedWinner, setSelectedWinner] = useState<string>('');
-
-    // No score entry needed for any game - just winner selection
 
     const openResultModal = (match: any) => {
         const teamA = teams.find((t: any) => t.id === match.teamAId);
@@ -249,93 +250,111 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteM
                 New {gameType.replace('_', ' ')} Match
             </motion.button>
 
-            {/* Active/Scheduled Matches List */}
-            <div className="grid grid-cols-1 gap-4">
-                {gameMatches.filter((m: any) => m.status === 'scheduled').map((match: any) => {
-                    const teamA = teams.find((t: any) => t.id === match.teamAId);
-                    const teamB = teams.find((t: any) => t.id === match.teamBId);
-                    return (
-                        <motion.div
-                            key={match.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6"
-                        >
-                            <div className="flex items-center gap-8 flex-1">
-                                <div className="flex flex-col items-center">
-                                    <span className="font-bold text-slate-800 text-lg">{teamA?.name}</span>
-                                    {match.matchType === 'doubles' && <span className="text-xs text-slate-400">Doubles</span>}
-                                </div>
-                                <div className="text-slate-300 font-black text-xl">VS</div>
-                                <div className="flex flex-col items-center">
-                                    <span className="font-bold text-slate-800 text-lg">{teamB?.name}</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="px-4 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
-                                    {match.stage.replace('_', ' ')} • {match.pointsAwarded} pts
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => openResultModal(match)}
-                                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold text-sm uppercase hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
-                                >
-                                    Enter Result
-                                </button>
-                                <button
-                                    onClick={() => deleteMatch(match.id)}
-                                    className="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all"
-                                    title="Delete Match"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                        </motion.div>
-                    );
-                })}
-
-                {gameMatches.filter((m: any) => m.status === 'scheduled').length === 0 && (
-                    <div className="text-center py-12 text-slate-400 font-medium">
-                        No scheduled matches.
+            {/* Live/Scheduled Matches Section */}
+            {scheduledMatches.length > 0 && (
+                <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
+                            <h3 className="font-bold text-slate-800 uppercase tracking-wide">
+                                Active Matches ({scheduledMatches.length})
+                            </h3>
+                        </div>
+                        <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                            Awaiting Results
+                        </span>
                     </div>
-                )}
-            </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {scheduledMatches.map((match: any) => {
+                            const teamA = teams.find((t: any) => t.id === match.teamAId);
+                            const teamB = teams.find((t: any) => t.id === match.teamBId);
+                            return (
+                                <motion.div
+                                    key={match.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-slate-50 p-5 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all"
+                                >
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                            {match.stage.replace('_', ' ')} • {match.matchType}
+                                        </span>
+                                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                            {match.pointsAwarded} pts
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-4 mb-4">
+                                        <div className="text-center flex-1">
+                                            <div className="font-bold text-slate-800">{teamA?.name}</div>
+                                        </div>
+                                        <div className="text-slate-300 font-black text-sm">VS</div>
+                                        <div className="text-center flex-1">
+                                            <div className="font-bold text-slate-800">{teamB?.name}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => openResultModal(match)}
+                                            className="flex-1 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold text-xs uppercase hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
+                                        >
+                                            Enter Result
+                                        </button>
+                                        <button
+                                            onClick={() => deleteMatch(match.id)}
+                                            className="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all"
+                                            title="Delete Match"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {scheduledMatches.length === 0 && (
+                <div className="text-center py-16 text-slate-400">
+                    <div className="text-6xl mb-4">🎯</div>
+                    <p className="font-medium">No active matches</p>
+                    <p className="text-sm">Click "Bulk Setup" to create multiple parallel matches</p>
+                </div>
+            )}
 
             {/* Completed History */}
-            <div>
-                <h3 className="font-bold text-slate-400 uppercase tracking-widest text-xs mb-4">Recent Results</h3>
-                <div className="space-y-2">
-                    {gameMatches.filter((m: any) => m.status === 'completed').slice(-5).reverse().map((match: any) => {
-                        const winner = teams.find((t: any) => t.id === match.winnerTeamId);
-                        const teamA = teams.find((t: any) => t.id === match.teamAId);
-                        const teamB = teams.find((t: any) => t.id === match.teamBId);
-                        return (
-                            <div key={match.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl text-sm">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-slate-500">{match.stage}</span>
-                                    <span className={`font-bold ${winner?.id === teamA?.id ? 'text-green-600' : 'text-slate-600'}`}>
-                                        {teamA?.name}
-                                    </span>
-                                    {match.resultMessage && (
-                                        <span className="font-mono text-slate-800 bg-slate-200 px-2 py-1 rounded">
-                                            {match.resultMessage}
+            {completedMatches.length > 0 && (
+                <div>
+                    <h3 className="font-bold text-slate-400 uppercase tracking-widest text-xs mb-4">Recent Results</h3>
+                    <div className="space-y-2">
+                        {completedMatches.slice(-8).reverse().map((match: any) => {
+                            const winner = teams.find((t: any) => t.id === match.winnerTeamId);
+                            const teamA = teams.find((t: any) => t.id === match.teamAId);
+                            const teamB = teams.find((t: any) => t.id === match.teamBId);
+                            return (
+                                <div key={match.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl text-sm">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-slate-400 text-xs">{match.stage}</span>
+                                        <span className={`font-bold ${winner?.id === teamA?.id ? 'text-green-600' : 'text-slate-500'}`}>
+                                            {teamA?.name}
                                         </span>
-                                    )}
-                                    <span className={`font-bold ${winner?.id === teamB?.id ? 'text-green-600' : 'text-slate-600'}`}>
-                                        {teamB?.name}
+                                        <span className="text-slate-300">vs</span>
+                                        <span className={`font-bold ${winner?.id === teamB?.id ? 'text-green-600' : 'text-slate-500'}`}>
+                                            {teamB?.name}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded">
+                                        {winner?.name} Won
                                     </span>
                                 </div>
-                                <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded">
-                                    {winner?.name} Won
-                                </span>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Result Entry Modal */}
             <AnimatePresence>
