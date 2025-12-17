@@ -48,14 +48,50 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('oizom_admin') === 'true');
   const [activeGame, setActiveGame] = useState<GameType>('cricket');
   const [isSyncing, setIsSyncing] = useState(false);
-  const [youtubeStreamUrl, setYoutubeStreamUrlState] = useState<string>(() => {
-    return localStorage.getItem('oizom_youtube_url') || '';
-  });
+  const [youtubeStreamUrl, setYoutubeStreamUrlState] = useState<string>('');
 
   const setYoutubeStreamUrl = (url: string) => {
     setYoutubeStreamUrlState(url);
     localStorage.setItem('oizom_youtube_url', url);
+
+    // Sync to Supabase so all devices see the same stream
+    if (isSupabaseEnabled && supabase) {
+      supabase.from('settings').upsert({ key: 'youtube_stream_url', value: url }).then(({ error }) => {
+        if (error) console.error('Error saving YouTube URL to Supabase:', error);
+      });
+    }
   };
+
+  // Fetch YouTube URL from Supabase on mount
+  useEffect(() => {
+    const fetchYoutubeUrl = async () => {
+      if (isSupabaseEnabled && supabase) {
+        const { data, error } = await supabase.from('settings').select('value').eq('key', 'youtube_stream_url').single();
+        if (!error && data?.value) {
+          setYoutubeStreamUrlState(data.value);
+        } else {
+          // Fallback to localStorage
+          setYoutubeStreamUrlState(localStorage.getItem('oizom_youtube_url') || '');
+        }
+      } else {
+        setYoutubeStreamUrlState(localStorage.getItem('oizom_youtube_url') || '');
+      }
+    };
+    fetchYoutubeUrl();
+
+    // Subscribe to realtime changes for settings
+    if (isSupabaseEnabled && supabase) {
+      const channel = supabase.channel('settings-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (payload: any) => {
+          if (payload.new?.key === 'youtube_stream_url') {
+            setYoutubeStreamUrlState(payload.new.value || '');
+          }
+        })
+        .subscribe();
+
+      return () => { supabase?.removeChannel(channel); };
+    }
+  }, []);
 
   const [data, setData] = useState<TournamentData>(() => {
     const saved = localStorage.getItem('oizom_cricket_data');

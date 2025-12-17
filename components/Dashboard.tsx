@@ -431,14 +431,32 @@ const TopPerformerCard = ({ title, player, value, subtext, icon: Icon, gradient 
 const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
 
+  // Point multipliers: Cricket x3, Badminton/TT x2, Chess/Carrom x1
+  const MULTIPLIERS = { cricket: 3, badminton: 2, tableTennis: 2, chess: 1, carrom: 1 };
+
   const leaderboard = teams.map(team => {
+    // Raw points
     const cricketPts = team.stats.points || 0;
     const badmintonPts = team.badmintonStats?.points || 0;
     const ttPts = team.tableTennisStats?.points || 0;
     const chessPts = team.chessStats?.points || 0;
     const carromPts = team.carromStats?.points || 0;
-    const total = cricketPts + badmintonPts + ttPts + chessPts + carromPts;
-    return { ...team, cricketPts, badmintonPts, ttPts, chessPts, carromPts, total };
+
+    // Weighted points with multipliers
+    const cricketWeighted = cricketPts * MULTIPLIERS.cricket;
+    const badmintonWeighted = badmintonPts * MULTIPLIERS.badminton;
+    const ttWeighted = ttPts * MULTIPLIERS.tableTennis;
+    const chessWeighted = chessPts * MULTIPLIERS.chess;
+    const carromWeighted = carromPts * MULTIPLIERS.carrom;
+
+    const total = cricketWeighted + badmintonWeighted + ttWeighted + chessWeighted + carromWeighted;
+
+    return {
+      ...team,
+      cricketPts, badmintonPts, ttPts, chessPts, carromPts,
+      cricketWeighted, badmintonWeighted, ttWeighted, chessWeighted, carromWeighted,
+      total
+    };
   }).sort((a, b) => b.total - a.total);
 
   return (
@@ -456,11 +474,11 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
               <tr>
                 <th className="pl-6 text-left">#</th>
                 <th className="text-left">Team</th>
-                <th className="text-center">Cricket</th>
-                <th className="text-center">Badminton</th>
-                <th className="text-center">TT</th>
-                <th className="text-center">Chess</th>
-                <th className="text-center">Carrom</th>
+                <th className="text-center"><span className="text-[10px] text-slate-400 block">x3</span>Cricket</th>
+                <th className="text-center"><span className="text-[10px] text-slate-400 block">x2</span>Badminton</th>
+                <th className="text-center"><span className="text-[10px] text-slate-400 block">x2</span>TT</th>
+                <th className="text-center"><span className="text-[10px] text-slate-400 block">x1</span>Chess</th>
+                <th className="text-center"><span className="text-[10px] text-slate-400 block">x1</span>Carrom</th>
                 <th className="text-center pr-6 font-bold text-cricket-primary">Total</th>
               </tr>
             </thead>
@@ -485,11 +503,11 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
                       <ChevronRight size={14} className="text-slate-300" />
                     </div>
                   </td>
-                  <td className="text-center font-mono text-slate-500">{team.cricketPts}</td>
-                  <td className="text-center font-mono text-slate-500">{team.badmintonPts}</td>
-                  <td className="text-center font-mono text-slate-500">{team.ttPts}</td>
-                  <td className="text-center font-mono text-slate-500">{team.chessPts}</td>
-                  <td className="text-center font-mono text-slate-500">{team.carromPts}</td>
+                  <td className="text-center font-mono text-slate-500">{team.cricketWeighted}</td>
+                  <td className="text-center font-mono text-slate-500">{team.badmintonWeighted}</td>
+                  <td className="text-center font-mono text-slate-500">{team.ttWeighted}</td>
+                  <td className="text-center font-mono text-slate-500">{team.chessWeighted}</td>
+                  <td className="text-center font-mono text-slate-500">{team.carromWeighted}</td>
                   <td className="text-center pr-6 font-display font-bold text-xl text-cricket-primary">{team.total}</td>
                 </tr>
               ))}
@@ -539,15 +557,35 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
               {/* Points Summary */}
               <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-500 uppercase">Total Points</span>
+                  <span className="text-sm font-bold text-slate-500 uppercase">Total Weighted Points</span>
                   <span className="font-display text-3xl font-bold text-cricket-primary">{selectedTeam.total}</span>
                 </div>
-                <div className="mt-2 grid grid-cols-5 gap-2 text-center text-xs">
-                  <div><span className="text-slate-400">🏏</span> <span className="font-bold">{selectedTeam.cricketPts}</span></div>
-                  <div><span className="text-slate-400">🏸</span> <span className="font-bold">{selectedTeam.badmintonPts}</span></div>
-                  <div><span className="text-slate-400">🏓</span> <span className="font-bold">{selectedTeam.ttPts}</span></div>
-                  <div><span className="text-slate-400">♟️</span> <span className="font-bold">{selectedTeam.chessPts}</span></div>
-                  <div><span className="text-slate-400">🎯</span> <span className="font-bold">{selectedTeam.carromPts}</span></div>
+                <div className="mt-3 grid grid-cols-5 gap-2 text-center text-xs">
+                  <div className="p-2 bg-white rounded-lg">
+                    <span className="block text-slate-400">🏏 x3</span>
+                    <span className="font-bold text-slate-700">{selectedTeam.cricketWeighted}</span>
+                    <span className="block text-[10px] text-slate-400">({selectedTeam.cricketPts})</span>
+                  </div>
+                  <div className="p-2 bg-white rounded-lg">
+                    <span className="block text-slate-400">🏸 x2</span>
+                    <span className="font-bold text-slate-700">{selectedTeam.badmintonWeighted}</span>
+                    <span className="block text-[10px] text-slate-400">({selectedTeam.badmintonPts})</span>
+                  </div>
+                  <div className="p-2 bg-white rounded-lg">
+                    <span className="block text-slate-400">🏓 x2</span>
+                    <span className="font-bold text-slate-700">{selectedTeam.ttWeighted}</span>
+                    <span className="block text-[10px] text-slate-400">({selectedTeam.ttPts})</span>
+                  </div>
+                  <div className="p-2 bg-white rounded-lg">
+                    <span className="block text-slate-400">♟️ x1</span>
+                    <span className="font-bold text-slate-700">{selectedTeam.chessWeighted}</span>
+                    <span className="block text-[10px] text-slate-400">({selectedTeam.chessPts})</span>
+                  </div>
+                  <div className="p-2 bg-white rounded-lg">
+                    <span className="block text-slate-400">🎯 x1</span>
+                    <span className="font-bold text-slate-700">{selectedTeam.carromWeighted}</span>
+                    <span className="block text-[10px] text-slate-400">({selectedTeam.carromPts})</span>
+                  </div>
                 </div>
               </div>
 

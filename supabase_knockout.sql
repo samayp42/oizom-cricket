@@ -29,3 +29,21 @@ ALTER TABLE teams ADD COLUMN IF NOT EXISTS badminton_stats JSONB DEFAULT '{"play
 ALTER TABLE teams ADD COLUMN IF NOT EXISTS table_tennis_stats JSONB DEFAULT '{"played":0,"won":0,"lost":0,"points":0}';
 ALTER TABLE teams ADD COLUMN IF NOT EXISTS chess_stats JSONB DEFAULT '{"played":0,"won":0,"lost":0,"points":0}';
 ALTER TABLE teams ADD COLUMN IF NOT EXISTS carrom_stats JSONB DEFAULT '{"played":0,"won":0,"lost":0,"points":0}';
+
+-- Settings Table (for app-wide settings like YouTube stream)
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
+-- Enable RLS for settings
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+
+-- Policies for settings
+CREATE POLICY "Enable read access for all users" ON settings FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON settings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable update for all users" ON settings FOR UPDATE USING (true);
+CREATE POLICY "Enable delete for all users" ON settings FOR DELETE USING (true);
+
+-- Insert default YouTube setting
+INSERT INTO settings (key, value) VALUES ('youtube_stream_url', '') ON CONFLICT (key) DO NOTHING;
