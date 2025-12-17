@@ -200,15 +200,7 @@ const CricketMatchControl = ({ navigate, resetTournament, resetMatchesOnly, matc
                 </div>
             )}
 
-            {/* Reset Buttons */}
-            <div className="p-6 rounded-2xl border-2 border-orange-100 bg-orange-50 flex flex-wrap gap-4">
-                <button onClick={resetMatchesOnly} className="text-orange-600 font-bold uppercase text-xs flex items-center gap-2 bg-orange-100 px-4 py-2 rounded-lg hover:bg-orange-200 transition-colors">
-                    <RefreshCw size={14} /> Reset Matches Only
-                </button>
-                <button onClick={resetTournament} className="text-red-500 font-bold uppercase text-xs flex items-center gap-2 bg-red-100 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors">
-                    <AlertTriangle size={14} /> Reset Everything
-                </button>
-            </div>
+
         </div>
     );
 };

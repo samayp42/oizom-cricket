@@ -1063,28 +1063,37 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   const resetMatchesOnly = async () => {
-    if (!confirm('Reset all matches and player stats? Teams and players will be kept.')) {
+    if (!confirm('Reset CRICKET matches and cricket player stats only? Knockout games (Badminton, TT, Chess, Carrom) will be kept.')) {
       return;
     }
 
-    // Reset player stats AND knock game stats
+    // Reset ONLY cricket stats - keep knockout game stats
     const resetTeams = data.teams.map(team => ({
       ...team,
+      // Reset only cricket stats
       stats: {
         played: 0, won: 0, lost: 0, tie: 0, points: 0, nrr: 0,
         totalRunsScored: 0, totalOversFaced: 0, totalRunsConceded: 0, totalOversBowled: 0
       },
-      badmintonStats: { played: 0, won: 0, lost: 0, points: 0 },
-      tableTennisStats: { played: 0, won: 0, lost: 0, points: 0 },
-      chessStats: { played: 0, won: 0, lost: 0, points: 0 },
-      carromStats: { played: 0, won: 0, lost: 0, points: 0 },
+      // KEEP knockout stats as-is
+      badmintonStats: team.badmintonStats,
+      tableTennisStats: team.tableTennisStats,
+      chessStats: team.chessStats,
+      carromStats: team.carromStats,
+      // Reset only cricket player stats (runs, balls, wickets)
       players: team.players.map(p => ({
         ...p,
         stats: { runs: 0, balls: 0, wickets: 0, oversBowled: 0, runsConceded: 0, fours: 0, sixes: 0 }
       }))
     }));
 
-    const newData = { ...data, teams: resetTeams, matches: [], knockoutMatches: [] };
+    // Keep knockout matches, only clear cricket matches
+    const newData = {
+      ...data,
+      teams: resetTeams,
+      matches: [],  // Clear cricket matches
+      knockoutMatches: data.knockoutMatches || []  // KEEP knockout matches!
+    };
 
     // Skip realtime refetch to prevent overwriting
     skipRealtimeFor(5000);
@@ -1096,20 +1105,17 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     // Explicitly save to localStorage
     localStorage.setItem('oizom_cricket_data', JSON.stringify(newData));
 
-    // Clear from Supabase
+    // Clear ONLY cricket matches from Supabase - NOT knockout matches
     if (isSupabaseEnabled) {
       try {
         await supabase!.from('matches').delete().neq('id', '');
-        await supabase!.from('knockout_matches').delete().neq('id', '');
+        // DO NOT delete knockout_matches!
 
-        // Reset player and team stats in Supabase
+        // Reset only cricket team stats in Supabase
         for (const team of resetTeams) {
           await supabase!.from('teams').update({
-            stats: team.stats,
-            badminton_stats: team.badmintonStats,
-            table_tennis_stats: team.tableTennisStats,
-            chess_stats: team.chessStats,
-            carrom_stats: team.carromStats
+            stats: team.stats
+            // DO NOT update knockout stats
           }).eq('id', team.id);
 
           for (const player of team.players) {
