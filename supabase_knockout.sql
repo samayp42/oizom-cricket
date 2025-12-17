@@ -47,3 +47,27 @@ CREATE POLICY "Enable delete for all users" ON settings FOR DELETE USING (true);
 
 -- Insert default YouTube setting
 INSERT INTO settings (key, value) VALUES ('youtube_stream_url', '') ON CONFLICT (key) DO NOTHING;
+
+-- ============================================
+-- BACKUP TABLE - NO DELETE PERMISSION
+-- ============================================
+-- This table stores automatic backups of knockout matches
+-- DELETE is NOT allowed - data is protected forever
+
+CREATE TABLE IF NOT EXISTS data_backups (
+  id SERIAL PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  backup_type TEXT NOT NULL,  -- 'knockout_matches', 'teams', 'full_snapshot'
+  data JSONB NOT NULL,        -- Complete snapshot of the data
+  description TEXT            -- Optional note about when/why backup was created
+);
+
+-- Enable RLS
+ALTER TABLE data_backups ENABLE ROW LEVEL SECURITY;
+
+-- Policies - NO DELETE ALLOWED!
+CREATE POLICY "Enable read access for all users" ON data_backups FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON data_backups FOR INSERT WITH CHECK (true);
+-- NO DELETE POLICY - Data cannot be deleted!
+-- NO UPDATE POLICY - Data cannot be modified!
+

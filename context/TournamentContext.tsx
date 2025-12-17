@@ -1297,6 +1297,21 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         if (match.gameType === 'carrom') updateObj = { carrom_stats: loserTeam.carromStats };
         supabase!.from('teams').update(updateObj).eq('id', loserTeamId).then();
       }
+
+      // Auto-backup to protected table after each match resolution
+      supabase!.from('data_backups').insert({
+        backup_type: 'knockout_match_resolved',
+        data: {
+          match: match,
+          teams: updatedTeams,
+          all_matches: updatedMatches,
+          timestamp: new Date().toISOString()
+        },
+        description: `Match resolved: ${winnerTeam?.name || 'Unknown'} won (${match.gameType})`
+      }).then(({ error }) => {
+        if (error) console.error('Backup failed:', error);
+        else console.log('Match backed up to protected table');
+      });
     }
   };
 
