@@ -1248,13 +1248,20 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   const deleteKnockoutMatch = (matchId: string) => {
-    if (!confirm('Delete this match?')) return;
+    // Skip realtime to prevent stale data overwriting local changes
+    skipRealtimeFor(3000);
 
     const updatedMatches = (data.knockoutMatches || []).filter(m => m.id !== matchId);
     setData({ ...data, knockoutMatches: updatedMatches });
 
+    // Also save to localStorage immediately
+    const newData = { ...data, knockoutMatches: updatedMatches };
+    localStorage.setItem('oizom_cricket_data', JSON.stringify(newData));
+
     if (isSupabaseEnabled) {
-      supabase!.from('knockout_matches').delete().eq('id', matchId).then();
+      supabase!.from('knockout_matches').delete().eq('id', matchId).then(({ error }) => {
+        if (error) console.error('Delete error:', error);
+      });
     }
   };
 
