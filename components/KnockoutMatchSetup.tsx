@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Trophy, ChevronRight, Activity, Calendar } from 'lucide-react';
+import { Users, Trophy, ChevronRight, Activity, Calendar, ArrowLeft, X } from 'lucide-react';
 import { KnockoutMatchType, KnockoutMatchStage, GameType } from '../types';
 
 const KnockoutMatchSetup = () => {
@@ -75,12 +75,31 @@ const KnockoutMatchSetup = () => {
     return (
         <div className="min-h-screen bg-slate-50 pb-20 safe-area-pb">
             <div className="container mx-auto px-4 py-8 max-w-3xl">
-                {/* Header */}
-                <div className="text-center mb-10">
-                    <h1 className="text-3xl font-black text-slate-800 uppercase tracking-wider mb-2">
-                        {formatGameName(gameType)} Match Setup
-                    </h1>
-                    <p className="text-slate-500 font-medium">Configure new knockout match</p>
+                {/* Header with Back Button */}
+                <div className="flex items-center gap-4 mb-10">
+                    <motion.button
+                        onClick={() => navigate('/admin')}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="p-3 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-all shadow-sm"
+                    >
+                        <ArrowLeft size={20} />
+                    </motion.button>
+                    <div className="flex-1">
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-wider">
+                            {formatGameName(gameType)} Match
+                        </h1>
+                        <p className="text-slate-500 text-sm font-medium">Configure new knockout match</p>
+                    </div>
+                    <motion.button
+                        onClick={() => navigate('/admin')}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all"
+                        title="Cancel"
+                    >
+                        <X size={20} />
+                    </motion.button>
                 </div>
 
                 <div className="space-y-6">

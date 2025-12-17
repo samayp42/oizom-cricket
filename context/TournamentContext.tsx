@@ -195,7 +195,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   const login = (pin: string) => {
-    if (pin === '4932') {
+    if (pin === '0402') {
       setIsAdmin(true);
       sessionStorage.setItem('oizom_admin', 'true');
       return true;
