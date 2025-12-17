@@ -652,106 +652,114 @@ const MatchCenter = () => {
                                 <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">All Matches</h3>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                                {knockoutMatches.filter((m: any) => m.gameType === selectedGame).map((match: any, index: number) => {
-                                    const teamA = teams.find(t => t.id === match.teamAId);
-                                    const teamB = teams.find(t => t.id === match.teamBId);
-                                    const isCompleted = match.status === 'completed';
-                                    // For knockout games, 'scheduled' means it's being played (Live)
-                                    const isLive = match.status === 'scheduled' || match.status === 'live';
-                                    const config = SPORT_CONFIG[selectedGame];
+                                {knockoutMatches
+                                    .filter((m: any) => m.gameType === selectedGame)
+                                    .sort((a: any, b: any) => {
+                                        // Live/scheduled matches first, then completed
+                                        if (a.status === 'completed' && b.status !== 'completed') return 1;
+                                        if (a.status !== 'completed' && b.status === 'completed') return -1;
+                                        return 0;
+                                    })
+                                    .map((match: any, index: number) => {
+                                        const teamA = teams.find(t => t.id === match.teamAId);
+                                        const teamB = teams.find(t => t.id === match.teamBId);
+                                        const isCompleted = match.status === 'completed';
+                                        // For knockout games, 'scheduled' means it's being played (Live)
+                                        const isLive = match.status === 'scheduled' || match.status === 'live';
+                                        const config = SPORT_CONFIG[selectedGame];
 
-                                    return (
-                                        <motion.div
-                                            key={match.id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            whileHover={{ y: -4, scale: 1.02 }}
-                                            className={`relative overflow-hidden bg-white p-5 rounded-2xl shadow-lg border-2 transition-all
+                                        return (
+                                            <motion.div
+                                                key={match.id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                whileHover={{ y: -4, scale: 1.02 }}
+                                                className={`relative overflow-hidden bg-white p-5 rounded-2xl shadow-lg border-2 transition-all
                                                 ${isLive ? config?.borderActive + ' shadow-xl' : isCompleted ? 'border-slate-100 opacity-90' : 'border-slate-100 hover:border-slate-200'}`}
-                                        >
-                                            {/* Top gradient bar for live */}
-                                            {isLive && (
-                                                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config?.gradient}`} />
-                                            )}
-
-                                            {/* Status badge */}
-                                            <div className="absolute top-3 right-3">
+                                            >
+                                                {/* Top gradient bar for live */}
                                                 {isLive && (
-                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white">
-                                                        <motion.div
-                                                            className="w-1.5 h-1.5 rounded-full bg-white"
-                                                            animate={{ opacity: [1, 0.3, 1] }}
-                                                            transition={{ duration: 1, repeat: Infinity }}
-                                                        />
-                                                        <span className="text-[10px] font-bold uppercase">Live</span>
-                                                    </div>
+                                                    <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config?.gradient}`} />
                                                 )}
-                                                {isCompleted && (
-                                                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-600">
-                                                        <Trophy size={10} />
-                                                        <span className="text-[10px] font-bold uppercase">Done</span>
-                                                    </div>
-                                                )}
-                                            </div>
 
-                                            {/* Stage */}
-                                            <div className="text-center mb-4 mt-2">
-                                                <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${config?.lightBg} text-slate-600`}>
-                                                    {match.stage.replace('_', ' ')}
-                                                </span>
-                                            </div>
-
-                                            {/* Teams with Players */}
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="text-center flex-1">
-                                                    <div className="font-bold text-base text-slate-800 leading-tight mb-1">{teamA?.name || 'TBD'}</div>
-                                                    {/* Player Names for Team A */}
-                                                    {teamA && match.teamAPlayerIds && (
-                                                        <div className="text-[10px] text-slate-500 space-y-0.5 mt-1">
-                                                            {match.teamAPlayerIds.map((pid: string) => {
-                                                                const player = teamA.players?.find((p: any) => p.id === pid);
-                                                                return player ? (
-                                                                    <div key={pid} className="font-medium">{player.name}</div>
-                                                                ) : null;
-                                                            })}
+                                                {/* Status badge */}
+                                                <div className="absolute top-3 right-3">
+                                                    {isLive && (
+                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white">
+                                                            <motion.div
+                                                                className="w-1.5 h-1.5 rounded-full bg-white"
+                                                                animate={{ opacity: [1, 0.3, 1] }}
+                                                                transition={{ duration: 1, repeat: Infinity }}
+                                                            />
+                                                            <span className="text-[10px] font-bold uppercase">Live</span>
                                                         </div>
                                                     )}
-                                                    {isCompleted && match.winnerTeamId === teamA?.id && (
-                                                        <span className={`inline-block px-2 py-0.5 mt-2 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
-                                                    )}
-                                                </div>
-                                                <div className="px-3 pt-2">
-                                                    <span className="text-slate-300 font-black text-sm">VS</span>
-                                                </div>
-                                                <div className="text-center flex-1">
-                                                    <div className="font-bold text-base text-slate-800 leading-tight mb-1">{teamB?.name || 'TBD'}</div>
-                                                    {/* Player Names for Team B */}
-                                                    {teamB && match.teamBPlayerIds && (
-                                                        <div className="text-[10px] text-slate-500 space-y-0.5 mt-1">
-                                                            {match.teamBPlayerIds.map((pid: string) => {
-                                                                const player = teamB.players?.find((p: any) => p.id === pid);
-                                                                return player ? (
-                                                                    <div key={pid} className="font-medium">{player.name}</div>
-                                                                ) : null;
-                                                            })}
+                                                    {isCompleted && (
+                                                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-600">
+                                                            <Trophy size={10} />
+                                                            <span className="text-[10px] font-bold uppercase">Done</span>
                                                         </div>
                                                     )}
-                                                    {isCompleted && match.winnerTeamId === teamB?.id && (
-                                                        <span className={`inline-block px-2 py-0.5 mt-2 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
-                                                    )}
                                                 </div>
-                                            </div>
 
-                                            {/* Match type badge */}
-                                            <div className="text-center">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                    {match.matchType}
-                                                </span>
-                                            </div>
-                                        </motion.div>
-                                    );
-                                })}
+                                                {/* Stage */}
+                                                <div className="text-center mb-4 mt-2">
+                                                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${config?.lightBg} text-slate-600`}>
+                                                        {match.stage.replace('_', ' ')}
+                                                    </span>
+                                                </div>
+
+                                                {/* Teams with Players */}
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="text-center flex-1">
+                                                        <div className="font-bold text-base text-slate-800 leading-tight mb-1">{teamA?.name || 'TBD'}</div>
+                                                        {/* Player Names for Team A */}
+                                                        {teamA && match.teamAPlayerIds && (
+                                                            <div className="text-[10px] text-slate-500 space-y-0.5 mt-1">
+                                                                {match.teamAPlayerIds.map((pid: string) => {
+                                                                    const player = teamA.players?.find((p: any) => p.id === pid);
+                                                                    return player ? (
+                                                                        <div key={pid} className="font-medium">{player.name}</div>
+                                                                    ) : null;
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                        {isCompleted && match.winnerTeamId === teamA?.id && (
+                                                            <span className={`inline-block px-2 py-0.5 mt-2 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="px-3 pt-2">
+                                                        <span className="text-slate-300 font-black text-sm">VS</span>
+                                                    </div>
+                                                    <div className="text-center flex-1">
+                                                        <div className="font-bold text-base text-slate-800 leading-tight mb-1">{teamB?.name || 'TBD'}</div>
+                                                        {/* Player Names for Team B */}
+                                                        {teamB && match.teamBPlayerIds && (
+                                                            <div className="text-[10px] text-slate-500 space-y-0.5 mt-1">
+                                                                {match.teamBPlayerIds.map((pid: string) => {
+                                                                    const player = teamB.players?.find((p: any) => p.id === pid);
+                                                                    return player ? (
+                                                                        <div key={pid} className="font-medium">{player.name}</div>
+                                                                    ) : null;
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                        {isCompleted && match.winnerTeamId === teamB?.id && (
+                                                            <span className={`inline-block px-2 py-0.5 mt-2 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Match type badge */}
+                                                <div className="text-center">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        {match.matchType}
+                                                    </span>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
 
                                 {knockoutMatches.filter((m: any) => m.gameType === selectedGame).length === 0 && (
                                     <div className="col-span-full py-16 text-center">
