@@ -223,6 +223,7 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteM
 
     const [resultModal, setResultModal] = useState<{ match: any; teamA: any; teamB: any } | null>(null);
     const [selectedWinner, setSelectedWinner] = useState<string>('');
+    const [deleteConfirm, setDeleteConfirm] = useState<{ matchId: string; teamA: string; teamB: string } | null>(null);
 
     const openResultModal = (match: any) => {
         const teamA = teams.find((t: any) => t.id === match.teamAId);
@@ -235,6 +236,19 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteM
         if (!resultModal || !selectedWinner) return;
         resolveMatch(resultModal.match.id, selectedWinner);
         setResultModal(null);
+    };
+
+    const openDeleteConfirm = (match: any) => {
+        const teamA = teams.find((t: any) => t.id === match.teamAId);
+        const teamB = teams.find((t: any) => t.id === match.teamBId);
+        setDeleteConfirm({ matchId: match.id, teamA: teamA?.name || 'Team A', teamB: teamB?.name || 'Team B' });
+    };
+
+    const confirmDelete = () => {
+        if (deleteConfirm) {
+            deleteMatch(deleteConfirm.matchId);
+            setDeleteConfirm(null);
+        }
     };
 
     return (
@@ -303,7 +317,7 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteM
                                             Enter Result
                                         </button>
                                         <button
-                                            onClick={() => deleteMatch(match.id)}
+                                            onClick={() => openDeleteConfirm(match)}
                                             className="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all"
                                             title="Delete Match"
                                         >
@@ -421,6 +435,53 @@ const KnockoutMatchControl = ({ navigate, knockoutMatches, resolveMatch, deleteM
                                     className="flex-1 py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold uppercase text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-600 hover:to-emerald-600"
                                 >
                                     Confirm Result
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Confirmation Modal */}
+            <AnimatePresence>
+                {deleteConfirm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+                        onClick={() => setDeleteConfirm(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 50 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 50 }}
+                            className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="text-center mb-6">
+                                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Trash2 size={32} className="text-red-500" />
+                                </div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-2">Delete Match?</h2>
+                                <p className="text-slate-500">
+                                    {deleteConfirm.teamA} vs {deleteConfirm.teamB}
+                                </p>
+                                <p className="text-sm text-red-500 mt-2">This action cannot be undone.</p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setDeleteConfirm(null)}
+                                    className="flex-1 py-4 rounded-xl bg-slate-100 text-slate-600 font-bold uppercase text-sm hover:bg-slate-200"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 py-4 rounded-xl bg-red-500 text-white font-bold uppercase text-sm hover:bg-red-600"
+                                >
+                                    Delete
                                 </button>
                             </div>
                         </motion.div>
