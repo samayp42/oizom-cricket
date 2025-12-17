@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trophy, Shield, TrendingUp, Users, Target, Award, Zap, ChevronRight, Play, Star, Activity, Radio } from 'lucide-react';
@@ -429,6 +429,8 @@ const TopPerformerCard = ({ title, player, value, subtext, icon: Icon, gradient 
 // OVERALL LEADERBOARD
 // ============================================
 const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+
   const leaderboard = teams.map(team => {
     const cricketPts = team.stats.points || 0;
     const badmintonPts = team.badmintonStats?.points || 0;
@@ -464,7 +466,11 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
             </thead>
             <tbody>
               {leaderboard.map((team, idx) => (
-                <tr key={team.id} className={idx < 3 ? 'bg-yellow-50/50' : ''}>
+                <tr
+                  key={team.id}
+                  className={`cursor-pointer transition-colors hover:bg-cricket-primary/5 ${idx < 3 ? 'bg-yellow-50/50' : ''}`}
+                  onClick={() => setSelectedTeam(team)}
+                >
                   <td className="pl-6">
                     <span className={`w-8 h-8 inline-flex items-center justify-center rounded-full text-sm font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-slate-100 text-slate-700' : idx === 2 ? 'bg-orange-50 text-orange-700' : 'text-slate-400'}`}>
                       {idx + 1}
@@ -476,6 +482,7 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
                         {team.name.substring(0, 2).toUpperCase()}
                       </div>
                       <span className={`font-bold ${idx < 3 ? 'text-slate-900' : 'text-slate-700'}`}>{team.name}</span>
+                      <ChevronRight size={14} className="text-slate-300" />
                     </div>
                   </td>
                   <td className="text-center font-mono text-slate-500">{team.cricketPts}</td>
@@ -490,6 +497,91 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
           </table>
         </div>
       </div>
+
+      {/* Team Details Modal */}
+      <AnimatePresence>
+        {selectedTeam && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setSelectedTeam(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-cricket-primary to-cricket-secondary px-6 py-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center font-display font-bold text-2xl text-white">
+                      {selectedTeam.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="font-display text-2xl font-bold text-white">{selectedTeam.name}</h3>
+                      <p className="text-white/70 text-sm">Group {selectedTeam.group} • {selectedTeam.players?.length || 0} Players</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedTeam(null)}
+                    className="p-2 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Points Summary */}
+              <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-slate-500 uppercase">Total Points</span>
+                  <span className="font-display text-3xl font-bold text-cricket-primary">{selectedTeam.total}</span>
+                </div>
+                <div className="mt-2 grid grid-cols-5 gap-2 text-center text-xs">
+                  <div><span className="text-slate-400">🏏</span> <span className="font-bold">{selectedTeam.cricketPts}</span></div>
+                  <div><span className="text-slate-400">🏸</span> <span className="font-bold">{selectedTeam.badmintonPts}</span></div>
+                  <div><span className="text-slate-400">🏓</span> <span className="font-bold">{selectedTeam.ttPts}</span></div>
+                  <div><span className="text-slate-400">♟️</span> <span className="font-bold">{selectedTeam.chessPts}</span></div>
+                  <div><span className="text-slate-400">🎯</span> <span className="font-bold">{selectedTeam.carromPts}</span></div>
+                </div>
+              </div>
+
+              {/* Players List */}
+              <div className="px-6 py-4 max-h-[50vh] overflow-y-auto">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Squad</h4>
+                <div className="space-y-2">
+                  {selectedTeam.players?.map((player: any) => (
+                    <div key={player.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${player.gender === 'F' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'}`}>
+                          {player.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-800">{player.name}</div>
+                          <div className="text-xs text-slate-400">{player.gender === 'F' ? '👩 Female' : '👨 Male'}</div>
+                        </div>
+                      </div>
+                      {player.role && player.role !== 'player' && (
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${player.role === 'captain' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-200 text-slate-600'}`}>
+                          {player.role === 'captain' ? '👑 Captain' : '⭐ Vice Captain'}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {(!selectedTeam.players || selectedTeam.players.length === 0) && (
+                    <div className="text-center py-8 text-slate-400">No players added yet</div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
@@ -708,7 +800,7 @@ const UpcomingFixtures = () => {
 // MAIN DASHBOARD
 // ============================================
 const Dashboard = () => {
-  const { teams, matches, activeMatch, activeGame, setActiveGame, knockoutMatches } = useTournament();
+  const { teams, matches, activeMatch, activeGame, setActiveGame, knockoutMatches, youtubeStreamUrl } = useTournament();
 
   // Calculate top performers (Cricket Only for now)
   const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
@@ -753,6 +845,59 @@ const Dashboard = () => {
           </h1>
           <p className="text-cricket-textSecondary text-lg">Live Scores & Tournament Standings</p>
         </motion.div>
+
+        {/* YouTube Live Stream Embed */}
+        {youtubeStreamUrl && (() => {
+          // Extract video ID from various YouTube URL formats
+          const getYoutubeId = (url: string) => {
+            if (!url) return null;
+            // Already a video ID (11 chars)
+            if (url.length === 11 && !url.includes('/')) return url;
+            // Standard watch URL
+            const watchMatch = url.match(/[?&]v=([^&]+)/);
+            if (watchMatch) return watchMatch[1];
+            // Short URL
+            const shortMatch = url.match(/youtu\.be\/([^?]+)/);
+            if (shortMatch) return shortMatch[1];
+            // Embed URL
+            const embedMatch = url.match(/embed\/([^?]+)/);
+            if (embedMatch) return embedMatch[1];
+            // Live URL
+            const liveMatch = url.match(/live\/([^?]+)/);
+            if (liveMatch) return liveMatch[1];
+            return null;
+          };
+
+          const videoId = getYoutubeId(youtubeStreamUrl);
+          if (!videoId) return null;
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-10"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                <h2 className="font-display text-xl font-bold text-slate-800 uppercase tracking-wider">
+                  Live Stream
+                </h2>
+              </div>
+              <div className="bg-black rounded-2xl overflow-hidden shadow-2xl aspect-video">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
+                  title="Live Stream"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            </motion.div>
+          );
+        })()}
 
         {/* ALL LIVE MATCHES - Across All Games */}
         {(() => {

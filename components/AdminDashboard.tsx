@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Plus, UserPlus, PlayCircle, LogOut, Trash2, Users, Home, RefreshCw, AlertTriangle, Crown, ChevronRight, Trophy, Medal } from 'lucide-react';
+import { Shield, Plus, UserPlus, PlayCircle, LogOut, Trash2, Users, Home, RefreshCw, AlertTriangle, Crown, ChevronRight, Trophy, Medal, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameSelector } from './GameSelector';
 import { GameType } from '../types';
@@ -740,7 +740,7 @@ const TeamManagementSection = ({
 // MAIN ADMIN DASHBOARD
 // ============================================
 const AdminDashboard = () => {
-    const { isAdmin, login, logout, teams, matches, activeMatch, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, resetTournament, resetMatchesOnly, knockoutMatches, resolveKnockoutMatch, deleteKnockoutMatch, setActiveGame } = useTournament();
+    const { isAdmin, login, logout, teams, matches, activeMatch, addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, resetTournament, resetMatchesOnly, knockoutMatches, resolveKnockoutMatch, deleteKnockoutMatch, setActiveGame, youtubeStreamUrl, setYoutubeStreamUrl } = useTournament();
     const navigate = useNavigate();
     const [pin, setPin] = useState('');
     const [activeTab, setActiveTab] = useState<'match' | 'teams'>('match');
@@ -754,6 +754,9 @@ const AdminDashboard = () => {
 
     // Game Selection
     const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
+
+    // YouTube Live Stream
+    const [youtubeInput, setYoutubeInput] = useState(youtubeStreamUrl);
 
     if (!isAdmin) {
         return <LoginScreen pin={pin} setPin={setPin} login={login} />;
@@ -859,6 +862,69 @@ const AdminDashboard = () => {
                         )}
                     </motion.div>
                 </AnimatePresence>
+
+                {/* YouTube Live Stream Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-10"
+                >
+                    <div className="card-cricket p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center">
+                                <Radio size={20} className="text-white" />
+                            </div>
+                            <div>
+                                <h3 className="font-display font-bold text-lg text-slate-800 uppercase">YouTube Live Stream</h3>
+                                <p className="text-xs text-slate-500">Embed a YouTube live stream on the homepage</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">YouTube URL or Video ID</label>
+                                <input
+                                    type="text"
+                                    value={youtubeInput}
+                                    onChange={(e) => setYoutubeInput(e.target.value)}
+                                    placeholder="https://youtube.com/watch?v=... or video ID"
+                                    className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setYoutubeStreamUrl(youtubeInput);
+                                        alert('YouTube stream updated!');
+                                    }}
+                                    className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold uppercase text-sm hover:bg-red-600 transition-all"
+                                >
+                                    Set Live Stream
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setYoutubeInput('');
+                                        setYoutubeStreamUrl('');
+                                        alert('Live stream removed');
+                                    }}
+                                    className="px-6 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold uppercase text-sm hover:bg-slate-200 transition-all"
+                                >
+                                    Clear
+                                </button>
+                            </div>
+
+                            {youtubeStreamUrl && (
+                                <div className="mt-4 p-3 rounded-xl bg-green-50 border border-green-200">
+                                    <p className="text-sm text-green-700 font-medium">
+                                        ✅ Stream is LIVE: <span className="font-mono text-xs">{youtubeStreamUrl}</span>
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
             </div>
 
             {/* Game Selector Modal / Overlay */}

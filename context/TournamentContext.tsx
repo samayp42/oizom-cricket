@@ -37,6 +37,9 @@ interface TournamentContextType {
   createKnockoutMatch: (gameType: GameType, teamAId: string, teamBId: string, stage: KnockoutMatchStage, matchType: KnockoutMatchType, teamAPlayerIds: string[], teamBPlayerIds: string[]) => void;
   resolveKnockoutMatch: (matchId: string, winnerTeamId: string, resultMessage?: string) => void;
   deleteKnockoutMatch: (matchId: string) => void;
+  // YouTube Live Stream
+  youtubeStreamUrl: string;
+  setYoutubeStreamUrl: (url: string) => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -45,6 +48,14 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('oizom_admin') === 'true');
   const [activeGame, setActiveGame] = useState<GameType>('cricket');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [youtubeStreamUrl, setYoutubeStreamUrlState] = useState<string>(() => {
+    return localStorage.getItem('oizom_youtube_url') || '';
+  });
+
+  const setYoutubeStreamUrl = (url: string) => {
+    setYoutubeStreamUrlState(url);
+    localStorage.setItem('oizom_youtube_url', url);
+  };
 
   const [data, setData] = useState<TournamentData>(() => {
     const saved = localStorage.getItem('oizom_cricket_data');
@@ -1280,7 +1291,9 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, createMatch, updateMatchToss, startInnings, setNextBowler,
       recordBall, undoLastBall, endMatch, abandonMatch, resetTournament, resetMatchesOnly, generateKnockouts,
       // Knockout
-      activeGame, setActiveGame, knockoutMatches: data.knockoutMatches || [], createKnockoutMatch, resolveKnockoutMatch, deleteKnockoutMatch
+      activeGame, setActiveGame, knockoutMatches: data.knockoutMatches || [], createKnockoutMatch, resolveKnockoutMatch, deleteKnockoutMatch,
+      // YouTube
+      youtubeStreamUrl, setYoutubeStreamUrl
     }}>
       {children}
     </TournamentContext.Provider>
