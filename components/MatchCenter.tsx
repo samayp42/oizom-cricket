@@ -656,8 +656,8 @@ const MatchCenter = () => {
                                     const teamA = teams.find(t => t.id === match.teamAId);
                                     const teamB = teams.find(t => t.id === match.teamBId);
                                     const isCompleted = match.status === 'completed';
-                                    const isScheduled = match.status === 'scheduled';
-                                    const isLive = match.status === 'live';
+                                    // For knockout games, 'scheduled' means it's being played (Live)
+                                    const isLive = match.status === 'scheduled' || match.status === 'live';
                                     const config = SPORT_CONFIG[selectedGame];
 
                                     return (
@@ -670,9 +670,9 @@ const MatchCenter = () => {
                                             className={`relative overflow-hidden bg-white p-5 rounded-2xl shadow-lg border-2 transition-all
                                                 ${isLive ? config?.borderActive + ' shadow-xl' : isCompleted ? 'border-slate-100 opacity-90' : 'border-slate-100 hover:border-slate-200'}`}
                                         >
-                                            {/* Top gradient bar for live/scheduled */}
-                                            {(isLive || isScheduled) && (
-                                                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${isLive ? config?.gradient : 'from-slate-300 to-slate-400'}`} />
+                                            {/* Top gradient bar for live */}
+                                            {isLive && (
+                                                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config?.gradient}`} />
                                             )}
 
                                             {/* Status badge */}
@@ -691,12 +691,6 @@ const MatchCenter = () => {
                                                     <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-600">
                                                         <Trophy size={10} />
                                                         <span className="text-[10px] font-bold uppercase">Done</span>
-                                                    </div>
-                                                )}
-                                                {isScheduled && (
-                                                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
-                                                        <Clock size={10} />
-                                                        <span className="text-[10px] font-bold uppercase">Soon</span>
                                                     </div>
                                                 )}
                                             </div>
