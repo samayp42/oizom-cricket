@@ -702,21 +702,43 @@ const MatchCenter = () => {
                                                 </span>
                                             </div>
 
-                                            {/* Teams */}
-                                            <div className="flex items-center justify-between mb-4">
+                                            {/* Teams with Players */}
+                                            <div className="flex items-start justify-between mb-4">
                                                 <div className="text-center flex-1">
                                                     <div className="font-bold text-base text-slate-800 leading-tight mb-1">{teamA?.name || 'TBD'}</div>
+                                                    {/* Player Names for Team A */}
+                                                    {teamA && match.teamAPlayerIds && (
+                                                        <div className="text-[10px] text-slate-500 space-y-0.5 mt-1">
+                                                            {match.teamAPlayerIds.map((pid: string) => {
+                                                                const player = teamA.players?.find((p: any) => p.id === pid);
+                                                                return player ? (
+                                                                    <div key={pid} className="font-medium">{player.name}</div>
+                                                                ) : null;
+                                                            })}
+                                                        </div>
+                                                    )}
                                                     {isCompleted && match.winnerTeamId === teamA?.id && (
-                                                        <span className={`inline-block px-2 py-0.5 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
+                                                        <span className={`inline-block px-2 py-0.5 mt-2 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
                                                     )}
                                                 </div>
-                                                <div className="px-3">
+                                                <div className="px-3 pt-2">
                                                     <span className="text-slate-300 font-black text-sm">VS</span>
                                                 </div>
                                                 <div className="text-center flex-1">
                                                     <div className="font-bold text-base text-slate-800 leading-tight mb-1">{teamB?.name || 'TBD'}</div>
+                                                    {/* Player Names for Team B */}
+                                                    {teamB && match.teamBPlayerIds && (
+                                                        <div className="text-[10px] text-slate-500 space-y-0.5 mt-1">
+                                                            {match.teamBPlayerIds.map((pid: string) => {
+                                                                const player = teamB.players?.find((p: any) => p.id === pid);
+                                                                return player ? (
+                                                                    <div key={pid} className="font-medium">{player.name}</div>
+                                                                ) : null;
+                                                            })}
+                                                        </div>
+                                                    )}
                                                     {isCompleted && match.winnerTeamId === teamB?.id && (
-                                                        <span className={`inline-block px-2 py-0.5 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
+                                                        <span className={`inline-block px-2 py-0.5 mt-2 bg-gradient-to-r ${config?.gradient} text-white text-[9px] font-bold uppercase rounded-full`}>Winner</span>
                                                     )}
                                                 </div>
                                             </div>
