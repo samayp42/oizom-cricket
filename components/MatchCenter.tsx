@@ -658,7 +658,12 @@ const MatchCenter = () => {
                                         // Live/scheduled matches first, then completed
                                         if (a.status === 'completed' && b.status !== 'completed') return 1;
                                         if (a.status !== 'completed' && b.status === 'completed') return -1;
-                                        return 0;
+
+                                        // Within same status, sort by stage (Final > Semi Final > Round 1)
+                                        const stageOrder: Record<string, number> = { 'final': 3, 'semi_final': 2, 'round_1': 1 };
+                                        const aOrder = stageOrder[a.stage] || 0;
+                                        const bOrder = stageOrder[b.stage] || 0;
+                                        return bOrder - aOrder; // Higher stage first
                                     })
                                     .map((match: any, index: number) => {
                                         const teamA = teams.find(t => t.id === match.teamAId);
@@ -667,6 +672,15 @@ const MatchCenter = () => {
                                         // For knockout games, 'scheduled' means it's being played (Live)
                                         const isLive = match.status === 'scheduled' || match.status === 'live';
                                         const config = SPORT_CONFIG[selectedGame];
+                                        const isFinal = match.stage === 'final';
+                                        const isSemiFinal = match.stage === 'semi_final';
+
+                                        // Stage-specific border styles
+                                        const getStageBorder = () => {
+                                            if (isFinal) return 'border-amber-400 shadow-amber-200 shadow-xl';
+                                            if (isSemiFinal) return 'border-blue-300 shadow-blue-100 shadow-lg';
+                                            return isLive ? config?.borderActive + ' shadow-xl' : 'border-slate-100';
+                                        };
 
                                         return (
                                             <motion.div
@@ -675,8 +689,8 @@ const MatchCenter = () => {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.05 }}
                                                 whileHover={{ y: -4, scale: 1.02 }}
-                                                className={`relative overflow-hidden bg-white p-5 rounded-2xl shadow-lg border-2 transition-all
-                                                ${isLive ? config?.borderActive + ' shadow-xl' : isCompleted ? 'border-slate-100 opacity-90' : 'border-slate-100 hover:border-slate-200'}`}
+                                                className={`relative overflow-hidden bg-white p-5 rounded-2xl border-2 transition-all
+                                                ${getStageBorder()} ${isCompleted ? 'opacity-80' : ''}`}
                                             >
                                                 {/* Top gradient bar for live */}
                                                 {isLive && (
@@ -705,8 +719,11 @@ const MatchCenter = () => {
 
                                                 {/* Stage */}
                                                 <div className="text-center mb-4 mt-2">
-                                                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${config?.lightBg} text-slate-600`}>
-                                                        {match.stage.replace('_', ' ')}
+                                                    <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border
+                                                        ${isFinal ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-900 border-amber-400' :
+                                                            isSemiFinal ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                                                `${config?.lightBg} text-slate-600 border-slate-200`}`}>
+                                                        {isFinal ? '🏆 FINAL 🏆' : match.stage.replace('_', ' ')}
                                                     </span>
                                                 </div>
 
@@ -751,11 +768,18 @@ const MatchCenter = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Match type badge */}
-                                                <div className="text-center">
+                                                {/* Match type badge + Points for completed */}
+                                                <div className="text-center space-y-1">
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                                         {match.matchType}
                                                     </span>
+                                                    {isCompleted && (
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                                                +{match.pointsAwarded} pts
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </motion.div>
                                         );

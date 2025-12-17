@@ -748,25 +748,121 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <div className="flex flex-wrap justify-center gap-2 mb-6">
-            {['cricket', 'badminton', 'table_tennis', 'chess', 'carrom'].map((game) => (
-              <button
-                key={game}
-                onClick={() => setActiveGame(game as any)}
-                className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all 
-                    ${activeGame === game
-                    ? 'bg-slate-800 text-white shadow-lg'
-                    : 'bg-white text-slate-400 hover:text-slate-600'}`}
-              >
-                {game.replace('_', ' ')}
-              </button>
-            ))}
-          </div>
           <h1 className="font-display text-4xl md:text-6xl font-bold text-cricket-textPrimary uppercase tracking-wide mb-2 transition-all duration-300">
-            {activeGame.replace('_', ' ')}
+            Oizom Champions
           </h1>
           <p className="text-cricket-textSecondary text-lg">Live Scores & Tournament Standings</p>
         </motion.div>
+
+        {/* ALL LIVE MATCHES - Across All Games */}
+        {(() => {
+          const allLiveMatches = knockoutMatches.filter((m: any) => m.status === 'scheduled' || m.status === 'live');
+
+          if (allLiveMatches.length === 0) return null;
+
+          const SPORT_EMOJI: Record<string, string> = {
+            cricket: '🏏', badminton: '🏸', table_tennis: '🏓', chess: '♟️', carrom: '🎯'
+          };
+          const SPORT_GRADIENT: Record<string, string> = {
+            cricket: 'from-emerald-500 to-lime-400',
+            badminton: 'from-blue-500 to-indigo-500',
+            table_tennis: 'from-orange-500 to-red-500',
+            chess: 'from-slate-600 to-zinc-500',
+            carrom: 'from-amber-500 to-yellow-400'
+          };
+          const STAGE_STYLE: Record<string, { bg: string; text: string; border: string }> = {
+            round_1: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
+            semi_final: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+            final: { bg: 'bg-gradient-to-r from-amber-400 to-yellow-400', text: 'text-amber-900', border: 'border-amber-400' }
+          };
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-10"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                <h2 className="font-display text-xl font-bold text-slate-800 uppercase tracking-wider">
+                  Live Matches ({allLiveMatches.length})
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {allLiveMatches.map((match: any) => {
+                  const teamA = teams.find(t => t.id === match.teamAId);
+                  const teamB = teams.find(t => t.id === match.teamBId);
+                  const stageStyle = STAGE_STYLE[match.stage] || STAGE_STYLE.round_1;
+                  const gradient = SPORT_GRADIENT[match.gameType] || SPORT_GRADIENT.badminton;
+                  const isFinal = match.stage === 'final';
+                  const isSemiFinal = match.stage === 'semi_final';
+
+                  return (
+                    <motion.div
+                      key={match.id}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      className={`relative overflow-hidden bg-white rounded-2xl shadow-lg border-2 transition-all p-5
+                        ${isFinal ? 'border-amber-400 shadow-amber-200' : isSemiFinal ? 'border-blue-300' : 'border-slate-100'}`}
+                    >
+                      {/* Top gradient bar */}
+                      <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${gradient}`} />
+
+                      {/* Sport & Live Badge */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{SPORT_EMOJI[match.gameType] || '🎮'}</span>
+                          <span className="text-xs font-bold uppercase text-slate-400">{match.gameType.replace('_', ' ')}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white">
+                          <motion.div
+                            className="w-1.5 h-1.5 rounded-full bg-white"
+                            animate={{ opacity: [1, 0.3, 1] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                          />
+                          <span className="text-[10px] font-bold uppercase">Live</span>
+                        </div>
+                      </div>
+
+                      {/* Stage Badge */}
+                      <div className="text-center mb-3">
+                        <span className={`inline-block px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border ${stageStyle.bg} ${stageStyle.text} ${stageStyle.border}`}>
+                          {isFinal ? '🏆 FINAL 🏆' : match.stage.replace('_', ' ')}
+                        </span>
+                      </div>
+
+                      {/* Teams */}
+                      <div className="flex items-center justify-between">
+                        <div className="text-center flex-1">
+                          <div className="font-bold text-slate-800">{teamA?.name || 'TBD'}</div>
+                          {match.teamAPlayerIds?.map((pid: string) => {
+                            const player = teamA?.players?.find((p: any) => p.id === pid);
+                            return player ? <div key={pid} className="text-[10px] text-slate-500">{player.name}</div> : null;
+                          })}
+                        </div>
+                        <div className="px-3">
+                          <span className="text-slate-300 font-black text-sm">VS</span>
+                        </div>
+                        <div className="text-center flex-1">
+                          <div className="font-bold text-slate-800">{teamB?.name || 'TBD'}</div>
+                          {match.teamBPlayerIds?.map((pid: string) => {
+                            const player = teamB?.players?.find((p: any) => p.id === pid);
+                            return player ? <div key={pid} className="text-[10px] text-slate-500">{player.name}</div> : null;
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Points */}
+                      <div className="text-center mt-3">
+                        <span className="text-[10px] font-bold text-slate-400">{match.pointsAwarded} pts to winner</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          );
+        })()}
 
         {/* Overall Leaderboard */}
         <OverallLeaderboard teams={teams} />
@@ -823,6 +919,32 @@ const Dashboard = () => {
             </div>
           </motion.div>
         )}
+
+        {/* Sport Selector - After Top Performers */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="mb-10"
+        >
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Select Sport</h3>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {['cricket', 'badminton', 'table_tennis', 'chess', 'carrom'].map((game) => (
+              <button
+                key={game}
+                onClick={() => setActiveGame(game as any)}
+                className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all 
+                    ${activeGame === game
+                    ? 'bg-slate-800 text-white shadow-lg scale-105'
+                    : 'bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50 border border-slate-200'}`}
+              >
+                {game === 'cricket' ? '🏏' : game === 'badminton' ? '🏸' : game === 'table_tennis' ? '🏓' : game === 'chess' ? '♟️' : '🎯'} {game.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+        </motion.div>
 
         {/* Tournament Standings */}
         <motion.div
