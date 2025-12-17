@@ -557,34 +557,29 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
               {/* Points Summary */}
               <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-500 uppercase">Total Weighted Points</span>
+                  <span className="text-sm font-bold text-slate-500 uppercase">Total Points</span>
                   <span className="font-display text-3xl font-bold text-cricket-primary">{selectedTeam.total}</span>
                 </div>
                 <div className="mt-3 grid grid-cols-5 gap-2 text-center text-xs">
                   <div className="p-2 bg-white rounded-lg">
-                    <span className="block text-slate-400">🏏 x3</span>
+                    <span className="block text-slate-400">🏏</span>
                     <span className="font-bold text-slate-700">{selectedTeam.cricketWeighted}</span>
-                    <span className="block text-[10px] text-slate-400">({selectedTeam.cricketPts})</span>
                   </div>
                   <div className="p-2 bg-white rounded-lg">
-                    <span className="block text-slate-400">🏸 x2</span>
+                    <span className="block text-slate-400">🏸</span>
                     <span className="font-bold text-slate-700">{selectedTeam.badmintonWeighted}</span>
-                    <span className="block text-[10px] text-slate-400">({selectedTeam.badmintonPts})</span>
                   </div>
                   <div className="p-2 bg-white rounded-lg">
-                    <span className="block text-slate-400">🏓 x2</span>
+                    <span className="block text-slate-400">🏓</span>
                     <span className="font-bold text-slate-700">{selectedTeam.ttWeighted}</span>
-                    <span className="block text-[10px] text-slate-400">({selectedTeam.ttPts})</span>
                   </div>
                   <div className="p-2 bg-white rounded-lg">
-                    <span className="block text-slate-400">♟️ x1</span>
+                    <span className="block text-slate-400">♟️</span>
                     <span className="font-bold text-slate-700">{selectedTeam.chessWeighted}</span>
-                    <span className="block text-[10px] text-slate-400">({selectedTeam.chessPts})</span>
                   </div>
                   <div className="p-2 bg-white rounded-lg">
-                    <span className="block text-slate-400">🎯 x1</span>
+                    <span className="block text-slate-400">🎯</span>
                     <span className="font-bold text-slate-700">{selectedTeam.carromWeighted}</span>
-                    <span className="block text-[10px] text-slate-400">({selectedTeam.carromPts})</span>
                   </div>
                 </div>
               </div>
