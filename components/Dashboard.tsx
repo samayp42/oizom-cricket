@@ -474,11 +474,11 @@ const OverallLeaderboard = ({ teams }: { teams: any[] }) => {
               <tr>
                 <th className="pl-6 text-left">#</th>
                 <th className="text-left">Team</th>
-                <th className="text-center"><span className="text-[10px] text-slate-400 block">x3</span>Cricket</th>
-                <th className="text-center"><span className="text-[10px] text-slate-400 block">x2</span>Badminton</th>
-                <th className="text-center"><span className="text-[10px] text-slate-400 block">x2</span>TT</th>
-                <th className="text-center"><span className="text-[10px] text-slate-400 block">x1</span>Chess</th>
-                <th className="text-center"><span className="text-[10px] text-slate-400 block">x1</span>Carrom</th>
+                <th className="text-center">Cricket</th>
+                <th className="text-center">Badminton</th>
+                <th className="text-center">TT</th>
+                <th className="text-center">Chess</th>
+                <th className="text-center">Carrom</th>
                 <th className="text-center pr-6 font-bold text-cricket-primary">Total</th>
               </tr>
             </thead>
