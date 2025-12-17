@@ -1248,8 +1248,10 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   const deleteKnockoutMatch = (matchId: string) => {
-    // Skip realtime to prevent stale data overwriting local changes
-    skipRealtimeFor(3000);
+    console.log('Deleting match:', matchId);
+
+    // Skip realtime for longer to prevent stale data overwriting local changes
+    skipRealtimeFor(10000);
 
     const updatedMatches = (data.knockoutMatches || []).filter(m => m.id !== matchId);
     setData({ ...data, knockoutMatches: updatedMatches });
@@ -1258,9 +1260,15 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     const newData = { ...data, knockoutMatches: updatedMatches };
     localStorage.setItem('oizom_cricket_data', JSON.stringify(newData));
 
-    if (isSupabaseEnabled) {
-      supabase!.from('knockout_matches').delete().eq('id', matchId).then(({ error }) => {
-        if (error) console.error('Delete error:', error);
+    if (isSupabaseEnabled && supabase) {
+      console.log('Deleting from Supabase...');
+      supabase.from('knockout_matches').delete().eq('id', matchId).then(({ error, data: result }) => {
+        if (error) {
+          console.error('Supabase delete error:', error);
+          alert('Failed to delete from database: ' + error.message);
+        } else {
+          console.log('Supabase delete success:', result);
+        }
       });
     }
   };

@@ -22,6 +22,7 @@ ALTER TABLE knockout_matches ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON knockout_matches FOR SELECT USING (true);
 CREATE POLICY "Enable insert for all users" ON knockout_matches FOR INSERT WITH CHECK (true);
 CREATE POLICY "Enable update for all users" ON knockout_matches FOR UPDATE USING (true);
+CREATE POLICY "Enable delete for all users" ON knockout_matches FOR DELETE USING (true);
 
 -- Add Stats Columns to Teams Table
 ALTER TABLE teams ADD COLUMN IF NOT EXISTS badminton_stats JSONB DEFAULT '{"played":0,"won":0,"lost":0,"points":0}';
