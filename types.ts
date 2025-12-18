@@ -111,6 +111,7 @@ export interface Match {
   innings2?: InningsState;
   winnerId?: string;
   resultMessage?: string;
+  manOfTheMatch?: string; // Player ID of man of the match
 }
 
 export interface TournamentData {
@@ -155,4 +156,5 @@ export interface KnockoutMatch {
   status: 'scheduled' | 'completed';
   pointsAwarded: number; // 6, 8, or 10
   resultMessage?: string; // e.g., "21-18" for badminton/table tennis
+  manOfTheMatch?: string; // Player ID of man of the match
 }

@@ -155,6 +155,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
               groupStage: m.group_stage,
               knockoutStage: m.knockout_stage,
               resultMessage: m.result_message,
+              manOfTheMatch: m.man_of_the_match,
               playStatus: m.play_status || 'active',  // Critical: Map play_status to playStatus
               status: m.status || 'scheduled'
             }));
@@ -511,6 +512,107 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         match.resultMessage = "Match Tied";
       }
     }
+
+    // ======================================
+    // AUTOMATIC MAN OF THE MATCH CALCULATION
+    // ======================================
+    const calculateMOTM = (): string | undefined => {
+      const teamA = data.teams.find(t => t.id === match.teamAId);
+      const teamB = data.teams.find(t => t.id === match.teamBId);
+      if (!teamA || !teamB) return undefined;
+
+      const allPlayers = [...teamA.players, ...teamB.players];
+
+      // Combine all ball events from both innings
+      const allBalls = [
+        ...(match.innings1?.history || []),
+        ...(match.innings2?.history || [])
+      ];
+
+      // Get players who participated (batted or bowled)
+      const battingOrder1 = match.innings1?.battingOrder || [];
+      const battingOrder2 = match.innings2?.battingOrder || [];
+      const participantIds = new Set([
+        ...battingOrder1,
+        ...battingOrder2,
+        ...allBalls.map(b => b.bowlerId)
+      ]);
+      const participants = allPlayers.filter(p => participantIds.has(p.id));
+
+      if (participants.length === 0) return undefined;
+
+      // Calculate performance score for each player from THIS MATCH's data
+      const playerScores = participants.map(player => {
+        let score = 0;
+
+        // ========== BATTING PERFORMANCE (from match history) ==========
+        const battingBalls = allBalls.filter(b => b.batterId === player.id);
+        const runs = battingBalls.reduce((sum, b) => sum + b.runsScored, 0);
+        const balls = battingBalls.filter(b => b.extraType !== 'wide').length;
+        const fours = battingBalls.filter(b => b.runsScored === 4).length;
+        const sixes = battingBalls.filter(b => b.runsScored === 6).length;
+
+        // Base runs score (1 point per run)
+        score += runs;
+
+        // Strike rate bonus (if faced at least 6 balls)
+        if (balls >= 6) {
+          const sr = (runs / balls) * 100;
+          if (sr >= 200) score += 15;       // Exceptional SR
+          else if (sr >= 150) score += 10;  // Very good SR
+          else if (sr >= 120) score += 5;   // Good SR
+        }
+
+        // Boundary bonus
+        score += fours * 1;   // Extra point per four
+        score += sixes * 2;   // Extra 2 points per six
+
+        // Milestone bonus
+        if (runs >= 50) score += 10;  // Half century bonus
+        if (runs >= 30) score += 5;   // 30+ bonus
+
+        // ========== BOWLING PERFORMANCE (from match history) ==========
+        const bowlingBalls = allBalls.filter(b => b.bowlerId === player.id);
+        const wickets = bowlingBalls.filter(b => b.isWicket && b.wicketType !== 'run-out').length;
+        const validBallsBowled = bowlingBalls.filter(b => b.isValidBall).length;
+        const oversBowled = Math.floor(validBallsBowled / 6) + (validBallsBowled % 6) * 0.1;
+        const runsConceded = bowlingBalls.reduce((sum, b) => sum + b.runsScored + b.extras, 0);
+
+        // Wickets are heavily weighted (25 points per wicket)
+        score += wickets * 25;
+
+        // Multi-wicket bonus
+        if (wickets >= 3) score += 15;  // 3-fer bonus
+        if (wickets >= 2) score += 5;   // 2 wickets bonus
+
+        // Economy bonus (if bowled at least 1 over)
+        if (oversBowled >= 1) {
+          const economy = runsConceded / oversBowled;
+          if (economy <= 4) score += 15;       // Excellent economy
+          else if (economy <= 6) score += 10;  // Good economy
+          else if (economy <= 8) score += 5;   // Decent economy
+          else if (economy >= 12) score -= 5;  // Expensive penalty
+        }
+
+        return { player, score };
+      });
+
+      // Sort by score descending and return the top performer
+      playerScores.sort((a, b) => b.score - a.score);
+
+      // Debug logging
+      console.log('🏆 MOTM Calculation:', playerScores.slice(0, 3).map(p => ({
+        name: p.player.name,
+        score: p.score
+      })));
+
+      return playerScores.length > 0 ? playerScores[0].player.id : undefined;
+    };
+
+    // Set the Man of the Match
+    match.manOfTheMatch = calculateMOTM();
+    console.log('🏆 Man of the Match ID:', match.manOfTheMatch);
+
     updateTeamStats(match);
   };
 
@@ -973,7 +1075,8 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       supabase!.from('matches').update({
         status: match.status,
         winner_id: match.winnerId,
-        result_message: match.resultMessage
+        result_message: match.resultMessage,
+        man_of_the_match: match.manOfTheMatch
       }).eq('id', matchId).then(({ error }) => {
         if (error) console.error('Error ending match in Supabase:', error);
       });

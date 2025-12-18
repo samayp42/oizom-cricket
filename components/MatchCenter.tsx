@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { formatOvers } from '../utils/nrr';
-import { ArrowLeft, TrendingUp, Clock, Share2, Tv, Users, Activity, BarChart3, Radio, Flame, Circle, Dna, Grip, Disc, Zap, Trophy } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Clock, Share2, Tv, Users, Activity, BarChart3, Radio, Flame, Circle, Dna, Grip, Disc, Zap, Trophy, Award, ChevronRight, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import MatchAnalytics from './MatchAnalytics';
@@ -126,7 +126,7 @@ const Header = () => (
 // ============================================
 // SCORE HERO SECTION (CRICKET)
 // ============================================
-const ScoreHero = ({ match, battingTeam, bowlingTeam, currentInnings }: any) => {
+const ScoreHero = ({ match, battingTeam, bowlingTeam, currentInnings, teams }: any) => {
     if (!match) return null;
 
     return (
@@ -173,9 +173,33 @@ const ScoreHero = ({ match, battingTeam, bowlingTeam, currentInnings }: any) => 
 
                 {/* Score Display or Result */}
                 {match.status === 'completed' || match.status === 'abandoned' ? (
-                    <div className="text-2xl md:text-4xl font-display font-bold text-slate-800 mb-8">
-                        {match.resultMessage}
-                    </div>
+                    <>
+                        <div className="text-2xl md:text-4xl font-display font-bold text-slate-800 mb-4">
+                            {match.resultMessage}
+                        </div>
+                        {/* Man of the Match */}
+                        {match.manOfTheMatch && (() => {
+                            const allPlayers = teams?.flatMap((t: any) => t.players) || [];
+                            const motm = allPlayers.find((p: any) => p.id === match.manOfTheMatch);
+                            if (!motm) return null;
+                            return (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400/20 to-yellow-400/20 border border-amber-400/40 mb-6"
+                                >
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg">
+                                        <Award size={20} className="text-white" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-[10px] uppercase tracking-widest font-bold text-amber-600">Man of the Match</div>
+                                        <div className="font-display text-lg font-bold text-slate-800">{motm.name}</div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })()}
+                    </>
                 ) : (
                     currentInnings ? (
                         <motion.div
@@ -308,6 +332,7 @@ const MatchCenter = () => {
     const { activeMatch, teams, knockoutMatches, matches } = useTournament();
     const [selectedGame, setSelectedGame] = useState('cricket');
     const [activeTab, setActiveTab] = useState<'scorecard' | 'commentary' | 'analytics' | 'info'>('scorecard');
+    const [selectedMatch, setSelectedMatch] = useState<any>(null);
 
     const cricketMatch = activeMatch; // The global active cricket match
     const isCricketLive = cricketMatch && cricketMatch.status !== 'completed' && cricketMatch.status !== 'abandoned';
@@ -351,6 +376,7 @@ const MatchCenter = () => {
                                         battingTeam={battingTeam}
                                         bowlingTeam={bowlingTeam}
                                         currentInnings={currentInnings}
+                                        teams={teams}
                                     />
 
                                     {/* Tabs */}
@@ -553,15 +579,63 @@ const MatchCenter = () => {
                             <div className="mt-8">
                                 <h3 className="text-lg font-bold text-slate-800 uppercase tracking-widest mb-4">Other Matches</h3>
                                 <div className="grid gap-4">
-                                    {matches.filter((m: any) => m.id !== activeMatch?.id).map((m: any) => (
-                                        <div key={m.id} className="bg-white p-4 rounded-xl border border-slate-100 flex justify-between items-center">
-                                            <div className="flex gap-4 items-center">
-                                                <span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase">{m.status}</span>
-                                                <span className="font-bold text-slate-700"> Match {new Date(m.date || Date.now()).toLocaleDateString()}</span>
-                                            </div>
-                                            {m.resultMessage && <span className="text-emerald-600 font-bold text-sm">{m.resultMessage}</span>}
-                                        </div>
-                                    ))}
+                                    {matches.filter((m: any) => m.id !== activeMatch?.id).map((m: any) => {
+                                        const teamA = teams.find(t => t.id === m.teamAId);
+                                        const teamB = teams.find(t => t.id === m.teamBId);
+
+                                        // Get MOTM player info
+                                        let motmPlayer = null;
+                                        if (m.status === 'completed' && m.manOfTheMatch) {
+                                            const allPlayers = [...(teamA?.players || []), ...(teamB?.players || [])];
+                                            motmPlayer = allPlayers.find((p: any) => p.id === m.manOfTheMatch);
+                                        }
+
+                                        return (
+                                            <motion.div
+                                                key={m.id}
+                                                onClick={() => m.status === 'completed' && setSelectedMatch(m)}
+                                                className={`bg-white rounded-xl border border-slate-100 overflow-hidden transition-all ${m.status === 'completed' ? 'cursor-pointer hover:border-cricket-primary hover:shadow-md' : ''
+                                                    }`}
+                                                whileHover={m.status === 'completed' ? { scale: 1.01, x: 4 } : {}}
+                                            >
+                                                {/* Man of the Match Banner (Top) */}
+                                                {motmPlayer && (
+                                                    <div className="bg-gradient-to-r from-amber-400/20 to-yellow-400/20 border-b border-amber-400/30 px-4 py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center">
+                                                                <Award size={14} className="text-white" />
+                                                            </div>
+                                                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+                                                                Man of the Match:
+                                                            </span>
+                                                            <span className="text-sm font-display font-bold text-slate-800">
+                                                                {motmPlayer.name}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Match Info */}
+                                                <div className="p-4 flex justify-between items-center">
+                                                    <div className="flex gap-4 items-center">
+                                                        <span className={`text-xs font-bold px-2 py-1 rounded uppercase ${m.status === 'completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                                                            }`}>
+                                                            {m.status}
+                                                        </span>
+                                                        <span className="font-bold text-slate-700">
+                                                            {teamA?.name} vs {teamB?.name}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        {m.resultMessage && <span className="text-emerald-600 font-bold text-sm">{m.resultMessage}</span>}
+                                                        {m.status === 'completed' && (
+                                                            <ChevronRight size={18} className="text-slate-400" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
                                     {matches.length <= (activeMatch ? 1 : 0) && (
                                         <div className="text-center text-slate-400 text-sm italic">No other matches recorded.</div>
                                     )}
@@ -807,6 +881,266 @@ const MatchCenter = () => {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* ========================================== */}
+            {/* MATCH DETAILS MODAL */}
+            {/* ========================================== */}
+            <AnimatePresence>
+                {selectedMatch && (() => {
+                    const teamA = teams.find(t => t.id === selectedMatch.teamAId);
+                    const teamB = teams.find(t => t.id === selectedMatch.teamBId);
+                    const getSR = (runs: number, balls: number) => balls > 0 ? ((runs / balls) * 100).toFixed(0) : '0';
+                    const getEcon = (runs: number, overs: number) => overs > 0 ? (runs / overs).toFixed(2) : '0.00';
+
+                    return (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                            onClick={() => setSelectedMatch(null)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, y: 50 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.9, y: 50 }}
+                                className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                {/* Header */}
+                                <div className="sticky top-0 z-10 bg-gradient-to-r from-cricket-primary to-cricket-secondary px-6 py-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="font-display text-2xl font-bold text-white mb-1">Match Summary</h3>
+                                            <p className="text-white/70 text-sm">{teamA?.name} vs {teamB?.name}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedMatch(null)}
+                                            className="p-2 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors"
+                                        >
+                                            <X size={24} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* Match Result */}
+                                    <div className="text-center">
+                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold uppercase mb-3">
+                                            <Trophy size={16} />
+                                            Match Completed
+                                        </div>
+                                        <h2 className="text-3xl font-display font-bold text-slate-800 mb-4">
+                                            {selectedMatch.resultMessage}
+                                        </h2>
+
+                                        {/* Man of the Match */}
+                                        {selectedMatch.manOfTheMatch && (() => {
+                                            const allPlayers = [...(teamA?.players || []), ...(teamB?.players || [])];
+                                            const motm = allPlayers.find((p: any) => p.id === selectedMatch.manOfTheMatch);
+                                            if (!motm) return null;
+
+                                            // Calculate MOTM stats for this match
+                                            const allBalls = [
+                                                ...(selectedMatch.innings1?.history || []),
+                                                ...(selectedMatch.innings2?.history || [])
+                                            ];
+                                            const battingBalls = allBalls.filter((b: any) => b.batterId === motm.id);
+                                            const runs = battingBalls.reduce((sum: number, b: any) => sum + b.runsScored, 0);
+                                            const balls = battingBalls.filter((b: any) => b.extraType !== 'wide').length;
+                                            const wickets = allBalls.filter((b: any) => b.bowlerId === motm.id && b.isWicket && b.wicketType !== 'run-out').length;
+
+                                            return (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="inline-flex items-center gap-4 px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-400/20 to-yellow-400/20 border-2 border-amber-400/50 mb-6"
+                                                >
+                                                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-xl">
+                                                        <Award size={28} className="text-white" />
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <div className="text-[10px] uppercase tracking-widest font-bold text-amber-600 mb-1">⭐ Man of the Match</div>
+                                                        <div className="font-display text-2xl font-bold text-slate-800">{motm.name}</div>
+                                                        <div className="text-sm text-slate-600 font-mono mt-1">
+                                                            {runs > 0 && `${runs} runs (${balls}b)`}
+                                                            {runs > 0 && wickets > 0 && ' • '}
+                                                            {wickets > 0 && `${wickets} wickets`}
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    {/* Innings 1 Scorecard */}
+                                    {selectedMatch.innings1 && (
+                                        <div className="bg-cricket-bgAlt rounded-2xl overflow-hidden border border-cricket-border">
+                                            <div className="px-6 py-4 bg-cricket-primary/10 border-b border-cricket-border">
+                                                <div className="flex justify-between items-center">
+                                                    <h4 className="font-display text-lg font-bold text-cricket-textPrimary uppercase">
+                                                        {teams.find(t => t.id === selectedMatch.innings1.battingTeamId)?.name} - 1st Innings
+                                                    </h4>
+                                                    <div className="text-right">
+                                                        <div className="font-display text-3xl font-bold text-cricket-primary">
+                                                            {selectedMatch.innings1.totalRuns}/{selectedMatch.innings1.wickets}
+                                                        </div>
+                                                        <div className="text-sm text-slate-600 font-mono">
+                                                            {formatOvers(selectedMatch.innings1.overs)} overs
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Batting */}
+                                            <div className="p-4">
+                                                <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Batting</h5>
+                                                <div className="space-y-2">
+                                                    {teams.find(t => t.id === selectedMatch.innings1.battingTeamId)?.players
+                                                        .filter((p: any) => selectedMatch.innings1.battingOrder.includes(p.id))
+                                                        .map((p: any) => {
+                                                            // Calculate stats from this match
+                                                            const balls = selectedMatch.innings1.history.filter((b: any) =>
+                                                                b.batterId === p.id && b.extraType !== 'wide'
+                                                            );
+                                                            const runs = balls.reduce((sum: number, b: any) => sum + b.runsScored, 0);
+                                                            const ballsCount = balls.length;
+                                                            const isOut = selectedMatch.innings1.playersOut.includes(p.id);
+
+                                                            return (
+                                                                <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white transition-colors">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`font-semibold ${isOut ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                                                                            {p.name}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-6 text-sm font-mono">
+                                                                        <span className="font-bold text-slate-800">{runs}</span>
+                                                                        <span className="text-slate-500">({ballsCount})</span>
+                                                                        <span className="text-cricket-primary w-12 text-right">
+                                                                            {getSR(runs, ballsCount)}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
+                                            </div>
+
+                                            {/* Bowling */}
+                                            <div className="p-4 border-t border-cricket-border">
+                                                <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Bowling</h5>
+                                                <div className="space-y-2">
+                                                    {teams.find(t => t.id === selectedMatch.innings1.bowlingTeamId)?.players
+                                                        .filter((p: any) => selectedMatch.innings1.history.some((b: any) => b.bowlerId === p.id))
+                                                        .map((p: any) => {
+                                                            const bowlingBalls = selectedMatch.innings1.history.filter((b: any) => b.bowlerId === p.id);
+                                                            const wickets = bowlingBalls.filter((b: any) => b.isWicket && b.wicketType !== 'run-out').length;
+                                                            const validBalls = bowlingBalls.filter((b: any) => b.isValidBall).length;
+                                                            const overs = Math.floor(validBalls / 6) + (validBalls % 6) * 0.1;
+                                                            const runs = bowlingBalls.reduce((sum: number, b: any) => sum + b.runsScored + b.extras, 0);
+
+                                                            return (
+                                                                <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white transition-colors">
+                                                                    <span className="font-semibold text-slate-800">{p.name}</span>
+                                                                    <div className="flex items-center gap-6 text-sm font-mono">
+                                                                        <span className="text-slate-600">{formatOvers(overs)}</span>
+                                                                        <span className="font-bold text-cricket-secondary w-12">{wickets}-{runs}</span>
+                                                                        <span className="text-slate-500 w-12 text-right">{getEcon(runs, overs)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Innings 2 Scorecard */}
+                                    {selectedMatch.innings2 && (
+                                        <div className="bg-cricket-bgAlt rounded-2xl overflow-hidden border border-cricket-border">
+                                            <div className="px-6 py-4 bg-cricket-secondary/10 border-b border-cricket-border">
+                                                <div className="flex justify-between items-center">
+                                                    <h4 className="font-display text-lg font-bold text-cricket-textPrimary uppercase">
+                                                        {teams.find(t => t.id === selectedMatch.innings2.battingTeamId)?.name} - 2nd Innings
+                                                    </h4>
+                                                    <div className="text-right">
+                                                        <div className="font-display text-3xl font-bold text-cricket-secondary">
+                                                            {selectedMatch.innings2.totalRuns}/{selectedMatch.innings2.wickets}
+                                                        </div>
+                                                        <div className="text-sm text-slate-600 font-mono">
+                                                            {formatOvers(selectedMatch.innings2.overs)} overs
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Batting */}
+                                            <div className="p-4">
+                                                <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Batting</h5>
+                                                <div className="space-y-2">
+                                                    {teams.find(t => t.id === selectedMatch.innings2.battingTeamId)?.players
+                                                        .filter((p: any) => selectedMatch.innings2.battingOrder.includes(p.id))
+                                                        .map((p: any) => {
+                                                            const balls = selectedMatch.innings2.history.filter((b: any) =>
+                                                                b.batterId === p.id && b.extraType !== 'wide'
+                                                            );
+                                                            const runs = balls.reduce((sum: number, b: any) => sum + b.runsScored, 0);
+                                                            const ballsCount = balls.length;
+                                                            const isOut = selectedMatch.innings2.playersOut.includes(p.id);
+
+                                                            return (
+                                                                <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white transition-colors">
+                                                                    <span className={`font-semibold ${isOut ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                                                                        {p.name}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-6 text-sm font-mono">
+                                                                        <span className="font-bold text-slate-800">{runs}</span>
+                                                                        <span className="text-slate-500">({ballsCount})</span>
+                                                                        <span className="text-cricket-primary w-12 text-right">
+                                                                            {getSR(runs, ballsCount)}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
+                                            </div>
+
+                                            {/* Bowling */}
+                                            <div className="p-4 border-t border-cricket-border">
+                                                <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Bowling</h5>
+                                                <div className="space-y-2">
+                                                    {teams.find(t => t.id === selectedMatch.innings2.bowlingTeamId)?.players
+                                                        .filter((p: any) => selectedMatch.innings2.history.some((b: any) => b.bowlerId === p.id))
+                                                        .map((p: any) => {
+                                                            const bowlingBalls = selectedMatch.innings2.history.filter((b: any) => b.bowlerId === p.id);
+                                                            const wickets = bowlingBalls.filter((b: any) => b.isWicket && b.wicketType !== 'run-out').length;
+                                                            const validBalls = bowlingBalls.filter((b: any) => b.isValidBall).length;
+                                                            const overs = Math.floor(validBalls / 6) + (validBalls % 6) * 0.1;
+                                                            const runs = bowlingBalls.reduce((sum: number, b: any) => sum + b.runsScored + b.extras, 0);
+
+                                                            return (
+                                                                <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white transition-colors">
+                                                                    <span className="font-semibold text-slate-800">{p.name}</span>
+                                                                    <div className="flex items-center gap-6 text-sm font-mono">
+                                                                        <span className="text-slate-600">{formatOvers(overs)}</span>
+                                                                        <span className="font-bold text-cricket-secondary w-12">{wickets}-{runs}</span>
+                                                                        <span className="text-slate-500 w-12 text-right">{getEcon(runs, overs)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    );
+                })()}
+            </AnimatePresence>
         </div>
     );
 };
