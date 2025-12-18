@@ -975,7 +975,8 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
         status: match.status,
         play_status: match.playStatus,
         winner_id: match.winnerId,
-        result_message: match.resultMessage
+        result_message: match.resultMessage,
+        man_of_the_match: match.manOfTheMatch
       }).eq('id', matchId).then(({ error }) => {
         if (error) console.error('Error updating match score in Supabase:', error);
       });
