@@ -250,7 +250,7 @@ const BallHistoryItem = ({ ball, idx }: { ball: any, idx: number }) => {
 // MAIN SCORER COMPONENT
 // ============================================
 const Scorer = () => {
-    const { activeMatch, teams, recordBall, undoLastBall, endMatch, abandonMatch, setNextBowler, isAdmin } = useTournament();
+    const { activeMatch, teams, recordBall, undoLastBall, endMatch, abandonMatch, setNextBowler, swapStrike, isAdmin } = useTournament();
     const navigate = useNavigate();
 
     // Modal States
@@ -604,10 +604,10 @@ const Scorer = () => {
                                                                 <span
                                                                     key={i}
                                                                     className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center ${b === 'W' ? 'bg-red-500 text-white' :
-                                                                            b === '4' ? 'bg-blue-500 text-white' :
-                                                                                b === '6' ? 'bg-purple-500 text-white' :
-                                                                                    b === 'wd' || b === 'nb' ? 'bg-orange-100 text-orange-600' :
-                                                                                        'bg-slate-100 text-slate-600'
+                                                                        b === '4' ? 'bg-blue-500 text-white' :
+                                                                            b === '6' ? 'bg-purple-500 text-white' :
+                                                                                b === 'wd' || b === 'nb' ? 'bg-orange-100 text-orange-600' :
+                                                                                    'bg-slate-100 text-slate-600'
                                                                         }`}
                                                                 >
                                                                     {b}
@@ -693,6 +693,22 @@ const Scorer = () => {
                                     {currentInnings.history.length}
                                 </span>
                             )}
+                        </motion.button>
+
+                        {/* Swap Strike Button */}
+                        <motion.button
+                            onClick={() => swapStrike(activeMatch.id)}
+                            disabled={!currentInnings}
+                            whileTap={{ scale: 0.95 }}
+                            className={`w-full py-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${currentInnings
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl'
+                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                }`}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                            Swap Strike
                         </motion.button>
                     </div>
                 </motion.div>

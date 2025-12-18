@@ -23,6 +23,7 @@ interface TournamentContextType {
   updateMatchToss: (matchId: string, winnerId: string, choice: 'bat' | 'bowl') => void;
   startInnings: (matchId: string, strikerId: string, nonStrikerId: string, bowlerId: string) => void;
   setNextBowler: (matchId: string, bowlerId: string) => void;
+  swapStrike: (matchId: string) => void;
   recordBall: (matchId: string, ball: BallEvent, nextBatterId?: string) => void;
   undoLastBall: (matchId: string) => void;
   endMatch: (matchId: string) => void;
@@ -764,6 +765,34 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     }
   };
 
+  const swapStrike = (matchId: string) => {
+    const matchIndex = data.matches.findIndex(m => m.id === matchId);
+    if (matchIndex === -1) return;
+    let match = JSON.parse(JSON.stringify(data.matches[matchIndex])) as Match;
+    const currentInnings = match.innings2 || match.innings1;
+    if (!currentInnings) return;
+
+    // Swap striker and non-striker
+    const temp = currentInnings.strikerId;
+    currentInnings.strikerId = currentInnings.nonStrikerId;
+    currentInnings.nonStrikerId = temp;
+
+    const updatedMatches = [...data.matches];
+    updatedMatches[matchIndex] = match;
+    skipRealtimeFor(3000);
+    setData({ ...data, matches: updatedMatches });
+    setActiveMatch(match);
+
+    if (isSupabaseEnabled) {
+      supabase!.from('matches').update({
+        innings1: match.innings1,
+        innings2: match.innings2
+      }).eq('id', matchId).then(({ error }) => {
+        if (error) console.error('Error swapping strike in Supabase:', error);
+      });
+    }
+  };
+
   const recordBall = (matchId: string, ball: BallEvent, nextBatterId?: string) => {
     const matchIndex = data.matches.findIndex(m => m.id === matchId);
     if (matchIndex === -1) return;
@@ -1448,7 +1477,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     <TournamentContext.Provider value={{
       isAdmin, login, logout,
       teams: data.teams, matches: data.matches, activeMatch,
-      addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, createMatch, updateMatchToss, startInnings, setNextBowler,
+      addTeam, deleteTeam, addPlayer, deletePlayer, updateTeamGroup, setPlayerRole, setPlayerGender, createMatch, updateMatchToss, startInnings, setNextBowler, swapStrike,
       recordBall, undoLastBall, endMatch, abandonMatch, resetTournament, resetMatchesOnly, generateKnockouts,
       // Knockout
       activeGame, setActiveGame, knockoutMatches: data.knockoutMatches || [], createKnockoutMatch, resolveKnockoutMatch, deleteKnockoutMatch,
