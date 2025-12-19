@@ -208,6 +208,7 @@ const MatchSetup = () => {
     const [teamA, setTeamA] = useState('');
     const [teamB, setTeamB] = useState('');
     const [overs, setOvers] = useState(6);
+    const [knockoutStage, setKnockoutStage] = useState<'SF1' | 'SF2' | 'FINAL' | undefined>(undefined);
     const [tossWinner, setTossWinner] = useState('');
     const [tossChoice, setTossChoice] = useState<'bat' | 'bowl' | ''>('');
     const [lineup1, setLineup1] = useState<string[]>([]);
@@ -230,7 +231,7 @@ const MatchSetup = () => {
     // Handlers
     const handleCreate = () => {
         if (teamA && teamB && teamA !== teamB) {
-            createMatch(teamA, teamB, overs);
+            createMatch(teamA, teamB, overs, knockoutStage);
         }
     };
 
@@ -314,6 +315,69 @@ const MatchSetup = () => {
                             ))}
                         </div>
                         <p className="text-xs text-cricket-textMuted mt-3">Overs per innings</p>
+                    </div>
+
+                    {/* Knockout Stage Selection */}
+                    <div>
+                        <label className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-cricket-textMuted mb-4">
+                            <Target size={14} />
+                            Match Type (Optional)
+                        </label>
+                        <div className="flex flex-wrap gap-3">
+                            <motion.button
+                                onClick={() => setKnockoutStage(undefined)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`px-6 py-3 rounded-xl font-bold text-sm border-2 transition-all
+                                    ${!knockoutStage
+                                        ? 'bg-gradient-to-br from-cricket-primary to-cricket-primaryLight text-white border-transparent shadow-glow-green'
+                                        : 'bg-white border-cricket-border text-cricket-textMuted hover:border-cricket-primary/50 hover:text-cricket-textPrimary'
+                                    }`}
+                            >
+                                Regular Match
+                            </motion.button>
+                            <motion.button
+                                onClick={() => setKnockoutStage('SF1')}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`px-6 py-3 rounded-xl font-bold text-sm border-2 transition-all
+                                    ${knockoutStage === 'SF1'
+                                        ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white border-transparent shadow-lg'
+                                        : 'bg-white border-cricket-border text-cricket-textMuted hover:border-amber-500/50 hover:text-cricket-textPrimary'
+                                    }`}
+                            >
+                                Semi Final 1
+                            </motion.button>
+                            <motion.button
+                                onClick={() => setKnockoutStage('SF2')}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`px-6 py-3 rounded-xl font-bold text-sm border-2 transition-all
+                                    ${knockoutStage === 'SF2'
+                                        ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white border-transparent shadow-lg'
+                                        : 'bg-white border-cricket-border text-cricket-textMuted hover:border-amber-500/50 hover:text-cricket-textPrimary'
+                                    }`}
+                            >
+                                Semi Final 2
+                            </motion.button>
+                            <motion.button
+                                onClick={() => setKnockoutStage('FINAL')}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`px-6 py-3 rounded-xl font-bold text-sm border-2 transition-all
+                                    ${knockoutStage === 'FINAL'
+                                        ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 text-cricket-textPrimary border-transparent shadow-xl'
+                                        : 'bg-white border-cricket-border text-cricket-textMuted hover:border-yellow-500/50 hover:text-cricket-textPrimary'
+                                    }`}
+                            >
+                                🏆 FINAL
+                            </motion.button>
+                        </div>
+                        <p className="text-xs text-cricket-textMuted mt-3">
+                            {!knockoutStage ? 'Regular league match' :
+                                knockoutStage === 'SF1' || knockoutStage === 'SF2' ? 'Loser gets +3 bonus points' :
+                                    'Runner-up gets +6 bonus points'}
+                        </p>
                     </div>
 
                     {/* Warning for missing teams */}

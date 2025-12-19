@@ -19,7 +19,7 @@ interface TournamentContextType {
   deletePlayer: (teamId: string, playerId: string) => void;
   setPlayerRole: (teamId: string, playerId: string, role: 'captain' | 'vice-captain' | 'player') => void;
   setPlayerGender: (teamId: string, playerId: string, gender: 'M' | 'F') => void;
-  createMatch: (teamAId: string, teamBId: string, overs: number) => void;
+  createMatch: (teamAId: string, teamBId: string, overs: number, knockoutStage?: 'SF1' | 'SF2' | 'FINAL') => void;
   updateMatchToss: (matchId: string, winnerId: string, choice: 'bat' | 'bowl') => void;
   startInnings: (matchId: string, strikerId: string, nonStrikerId: string, bowlerId: string) => void;
   setNextBowler: (matchId: string, bowlerId: string) => void;
@@ -614,17 +614,40 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
     match.manOfTheMatch = calculateMOTM();
     console.log('🏆 Man of the Match ID:', match.manOfTheMatch);
 
+    // ======================================
+    // BONUS POINTS FOR CRICKET KNOCKOUTS (REGULAR MATCHES)
+    // ======================================
+    if (match.knockoutStage && match.winnerId) {
+      const loserTeamId = match.teamAId === match.winnerId ? match.teamBId : match.teamAId;
+      const loserTeam = data.teams.find(t => t.id === loserTeamId);
+
+      if (loserTeam) {
+        // Semifinal losers get +3 bonus points
+        if (match.knockoutStage === 'SF1' || match.knockoutStage === 'SF2') {
+          loserTeam.stats.points += 3;
+          console.log(`🏆 Semifinal Bonus: ${loserTeam.name} gets +3 points for reaching semifinals`);
+        }
+
+        // Finals runner-up gets +6 bonus points
+        if (match.knockoutStage === 'FINAL') {
+          loserTeam.stats.points += 6;
+          console.log(`🥈 Runner-up Bonus: ${loserTeam.name} gets +6 points for reaching finals`);
+        }
+      }
+    }
+
     updateTeamStats(match);
   };
 
 
-  const createMatch = (teamAId: string, teamBId: string, overs: number) => {
+  const createMatch = (teamAId: string, teamBId: string, overs: number, knockoutStage?: 'SF1' | 'SF2' | 'FINAL') => {
     const newMatch: Match = {
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString(),
       teamAId,
       teamBId,
       groupStage: true,
+      knockoutStage,
       status: 'toss',
       playStatus: 'active',
       totalOvers: overs,
@@ -1393,6 +1416,35 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
 
       updateStats(winnerTeam, true);
       updateStats(loserTeam, false);
+
+      // ============================================
+      // BONUS POINTS FOR KNOCKOUTS (MAIN LEADERBOARD)
+      // ============================================
+      // These points are added to the main stats.points
+
+      if (match.stage === 'semi_final') {
+        // Semifinal losers get bonus points (multiplied)
+        if (match.gameType === 'cricket') {
+          loserTeam.stats.points += 3; // x3 base = 1 * 3
+        } else if (match.gameType === 'badminton' || match.gameType === 'table_tennis') {
+          loserTeam.stats.points += 6; // x2 base = 3 * 2
+        } else if (match.gameType === 'chess' || match.gameType === 'carrom') {
+          loserTeam.stats.points += 3; // x1 base = 3 * 1
+        }
+        console.log(`🏆 Semifinal Bonus: ${loserTeam.name} gets bonus points (${match.gameType})`);
+      }
+
+      if (match.stage === 'final') {
+        // Finals runner-up gets bonus points (multiplied)
+        if (match.gameType === 'cricket') {
+          loserTeam.stats.points += 6; // x3 base = 2 * 3
+        } else if (match.gameType === 'badminton' || match.gameType === 'table_tennis') {
+          loserTeam.stats.points += 12; // x2 base = 6 * 2
+        } else if (match.gameType === 'chess' || match.gameType === 'carrom') {
+          loserTeam.stats.points += 6; // x1 base = 6 * 1
+        }
+        console.log(`🥈 Runner-up Bonus: ${loserTeam.name} gets bonus points (${match.gameType})`);
+      }
     }
 
     const updatedMatches = [...matches];
@@ -1416,6 +1468,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       // Update specific stats column in Supabase
       if (winnerTeam) {
         let updateObj: any = {};
+        if (match.gameType === 'cricket') updateObj = { stats: winnerTeam.stats };
         if (match.gameType === 'badminton') updateObj = { badminton_stats: winnerTeam.badmintonStats };
         if (match.gameType === 'table_tennis') updateObj = { table_tennis_stats: winnerTeam.tableTennisStats };
         if (match.gameType === 'chess') updateObj = { chess_stats: winnerTeam.chessStats };
@@ -1424,6 +1477,7 @@ export const TournamentProvider = ({ children }: PropsWithChildren<{}>) => {
       }
       if (loserTeam) {
         let updateObj: any = {};
+        if (match.gameType === 'cricket') updateObj = { stats: loserTeam.stats };
         if (match.gameType === 'badminton') updateObj = { badminton_stats: loserTeam.badmintonStats };
         if (match.gameType === 'table_tennis') updateObj = { table_tennis_stats: loserTeam.tableTennisStats };
         if (match.gameType === 'chess') updateObj = { chess_stats: loserTeam.chessStats };
